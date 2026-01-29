@@ -1,0 +1,44 @@
+# State Engine & OWASP-Aligned Rules
+
+## Purpose
+
+The State Engine evaluates engagement context and produces **next-step suggestions**.
+
+## Design Constraints
+
+* Deterministic
+* Read-only (no state mutation)
+* Transparent and debuggable
+
+## Methodology Alignment (OWASP WSTG)
+
+| Internal Phase    | OWASP WSTG           |
+| ----------------- | -------------------- |
+| Recon             | WSTG-INFO            |
+| Enumeration       | WSTG-CONF, WSTG-IDNT |
+| Exploitation      | WSTG-INPV, AUTHZ     |
+| Post-Exploitation | WSTG-BUSL, IMPACT    |
+
+## Rule Characteristics
+
+* Phase-scoped
+* Condition-based
+* Suggestion-only
+
+## Rule Inputs
+
+* Current phase
+* Services
+* Ports
+* Findings tags
+
+## Rule Outputs
+
+* Suggested techniques
+* Notes or warnings
+
+## Safety Guarantees
+
+* No auto phase changes
+* No command execution
+* No vulnerability assumptions

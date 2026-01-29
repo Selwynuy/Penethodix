@@ -1,0 +1,212 @@
+# UI / UX Design Specification (JSON)
+
+## Purpose
+
+Defines a **clean, modern, professional UI/UX layout** for the State-Aware Pentest Notebook.
+
+This is a **design contract**, not tied to a specific framework (works for Tauri, Electron, Web, or TUI-with-GUI).
+
+---
+
+## Design Principles
+
+* Minimalist, distraction-free
+* Information-dense but readable
+* Keyboard-first
+* Dark-mode friendly (pentester default)
+* Explicit separation of *Knowledge*, *Engagement*, and *Suggestions*
+
+---
+
+## Global UI Layout
+
+```json
+{
+  "layout": "three-pane",
+  "theme": "dark",
+  "font": {
+    "family": "Inter, JetBrains Mono",
+    "sizes": {
+      "title": "18px",
+      "body": "14px",
+      "code": "13px"
+    }
+  }
+}
+```
+
+---
+
+## Main Application Shell
+
+```json
+{
+  "appShell": {
+    "header": {
+      "left": "appName",
+      "center": "activeEngagement",
+      "right": ["currentPhase", "syncStatus"]
+    },
+    "sidebar": {
+      "sections": ["Engagements", "Knowledge Base", "Rules"],
+      "collapsible": true
+    },
+    "content": "dynamic"
+  }
+}
+```
+
+---
+
+## Engagement View
+
+```json
+{
+  "engagementView": {
+    "panes": {
+      "left": "targetAndServices",
+      "center": "findingsEditor",
+      "right": "suggestionPanel"
+    }
+  }
+}
+```
+
+---
+
+## Target & Services Panel (Left)
+
+```json
+{
+  "targetPanel": {
+    "components": [
+      "targetList",
+      "openPorts",
+      "serviceMap"
+    ],
+    "interactions": {
+      "addPort": "modal",
+      "editService": "inline"
+    }
+  }
+}
+```
+
+---
+
+## Findings Editor (Center)
+
+```json
+{
+  "findingsEditor": {
+    "type": "markdown",
+    "features": [
+      "syntaxHighlighting",
+      "phaseTagging",
+      "autoSave",
+      "pasteRawOutput"
+    ]
+  }
+}
+```
+
+---
+
+## Suggestion Panel (Right)
+
+```json
+{
+  "suggestionPanel": {
+    "groupBy": "service",
+    "item": {
+      "title": "techniqueTitle",
+      "owaspTag": true,
+      "confidence": true,
+      "actions": ["view", "copyCommand", "markAsTried"]
+    }
+  }
+}
+```
+
+---
+
+## Technique Detail Drawer
+
+```json
+{
+  "techniqueDrawer": {
+    "trigger": "suggestionClick",
+    "sections": [
+      "description",
+      "inputs",
+      "commands",
+      "expectedOutput",
+      "notes"
+    ]
+  }
+}
+```
+
+---
+
+## Command Block Component
+
+```json
+{
+  "commandBlock": {
+    "style": "code",
+    "features": [
+      "copyToClipboard",
+      "variablePlaceholders",
+      "multiCommandSupport"
+    ]
+  }
+}
+```
+
+---
+
+## Keyboard Shortcuts
+
+```json
+{
+  "shortcuts": {
+    "switchPhase": "Ctrl+P",
+    "newFinding": "Ctrl+N",
+    "focusSuggestions": "Ctrl+S",
+    "copyCommand": "Ctrl+C"
+  }
+}
+```
+
+---
+
+## Visual Style Tokens
+
+```json
+{
+  "colors": {
+    "background": "#0F1115",
+    "panel": "#151821",
+    "accent": "#3B82F6",
+    "success": "#22C55E",
+    "warning": "#F59E0B"
+  },
+  "radius": "8px",
+  "shadow": "soft"
+}
+```
+
+---
+
+## UX Safeguards
+
+* No auto-execution of commands
+* Copy-only interaction
+* Explicit context (IP, port, phase) always visible
+
+---
+
+## Summary
+
+This UI emphasizes **clarity, speed, and trust** — designed for professionals who live inside engagements for hours at a time.

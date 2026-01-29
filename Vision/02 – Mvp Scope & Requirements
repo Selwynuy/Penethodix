@@ -1,0 +1,54 @@
+# MVP Scope & Requirements
+
+## MVP Goal
+
+Deliver a usable, local-first pentest notebook that feels intelligent through **state-aware suggestions**, without automation or AI exploitation.
+
+## In Scope (MVP)
+
+### Knowledge Base
+
+* Markdown-based notes
+* Categories:
+
+  * Ports & Services
+  * Methodology
+  * Techniques / Playbooks
+* Tagging and search
+
+### Engagements (Case Files)
+
+* Create/edit engagements
+* Define targets (IP/host)
+* Track open ports and services
+* Add free-form findings
+
+### Methodology Tracking
+
+* Fixed phases:
+
+  1. Reconnaissance
+  2. Enumeration
+  3. Exploitation
+  4. Post-Exploitation
+* Manual phase selection
+
+### Suggestions
+
+* Rule-based next-step suggestions
+* Based on phase + services + findings
+
+## Out of Scope (MVP)
+
+* Command execution
+* Auto-exploitation
+* Collaboration
+* Cloud sync
+* AI-generated payloads
+
+## Definition of Done
+
+* User can manage KB
+* User can manage engagements
+* State updates correctly
+* Suggestions change with context

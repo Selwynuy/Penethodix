@@ -1,0 +1,38 @@
+# Product Overview & Vision
+
+## Product Name
+
+State-Aware Pentest Notebook (working title)
+
+## Problem Statement
+
+Pentesters juggle scattered notes, tools, and mental checklists during engagements. Existing note tools are passive and unaware of engagement context, causing missed steps, inefficiency, and inconsistent methodology.
+
+## Solution
+
+A **state-aware pentest notebook** that combines reusable knowledge with engagement-specific execution tracking, and proactively suggests next steps based on current context.
+
+## Core Principles
+
+* Human-in-the-loop (never auto-hack)
+* Deterministic and explainable
+* Methodology-driven (OWASP-aligned)
+* Local-first and secure
+
+## Target Users
+
+* Professional penetration testers
+* Junior pentesters learning methodology
+* Red team operators needing structured execution
+
+## Core Foundations
+
+1. Knowledge Base – reusable pentesting knowledge
+2. Execution Base – engagement-specific case files
+
+## What Makes This Different
+
+* Engagement state awareness
+* Methodology-driven suggestions
+* Explicit phase tracking
+* Rule-based, auditable logic

@@ -1,0 +1,103 @@
+# Rule Evaluation Engine (Pseudocode)
+
+## Purpose
+
+Evaluates engagement state against rules and produces ordered suggestions.
+
+---
+
+## Inputs
+
+* Engagement state
+* Knowledge base
+* Rule set
+
+## Outputs
+
+* List of suggestions
+
+---
+
+## High-Level Flow
+
+```
+load engagement
+load rules for current phase
+load KB entries
+
+suggestions = []
+
+for rule in rules:
+    if evaluate_conditions(rule.conditions, engagement):
+        suggestions += rule.suggestions
+
+sort suggestions by priority desc
+deduplicate suggestions
+return suggestions
+```
+
+---
+
+## Condition Evaluation
+
+```
+function evaluate_conditions(conditions, engagement):
+    if conditions.services:
+        if not any(service in engagement.services for service in conditions.services):
+            return false
+
+    if conditions.ports:
+        if not any(port in engagement.open_ports for port in conditions.ports):
+            return false
+
+    if conditions.min_ports > 0:
+        if len(engagement.open_ports) < conditions.min_ports:
+            return false
+
+    if conditions.min_findings > 0:
+        if engagement.findings_count < conditions.min_findings:
+            return false
+
+    return true
+```
+
+---
+
+## Deduplication Logic
+
+```
+function deduplicate(suggestions):
+    seen = set()
+    result = []
+
+    for s in suggestions:
+        if s.ref not in seen:
+            seen.add(s.ref)
+            result.append(s)
+
+    return result
+```
+
+---
+
+## Safety Guarantees
+
+* No state mutation
+* No execution
+* No inference of success
+
+---
+
+## Debug Mode (Recommended)
+
+Expose:
+
+* Triggered rules
+* Failed condition reasons
+* Suggestion sources
+
+---
+
+## Summary
+
+This engine provides **predictable, explainable guidance** while keeping full control with the pentester.

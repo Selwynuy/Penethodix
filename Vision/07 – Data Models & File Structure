@@ -1,0 +1,81 @@
+# Data Models & File / Folder Structure
+
+## Design Goals
+
+* Local-first
+* Human-readable
+* Git-friendly
+
+---
+
+## Root Folder Layout
+
+```
+pentest-notebook/
+├── knowledge/
+│   ├── ports/
+│   ├── techniques/
+│   ├── methodology/
+│   └── rules/
+├── engagements/
+│   └── <engagement-id>/
+│       ├── engagement.json
+│       ├── findings.md
+│       └── artifacts/
+└── config/
+```
+
+---
+
+## Knowledge Models
+
+### Technique Entry
+
+```json
+{
+  "id": "technique.http.content-discovery",
+  "title": "HTTP Content Discovery",
+  "phase": "enumeration",
+  "owasp": ["WSTG-CONF"],
+  "content": "Markdown instructions",
+  "tags": ["http", "web"]
+}
+```
+
+---
+
+## Engagement Model
+
+### engagement.json
+
+```json
+{
+  "id": "eng-001",
+  "name": "Client A Internal Test",
+  "targets": ["10.10.10.5"],
+  "current_phase": "enumeration",
+  "open_ports": [22, 80, 445],
+  "services": {
+    "22": "SSH",
+    "80": "HTTP",
+    "445": "SMB"
+  }
+}
+```
+
+---
+
+## Findings Model
+
+### findings.md
+
+* Free-form markdown
+* Phase headers recommended
+
+---
+
+## Design Rationale
+
+* JSON for structure
+* Markdown for human notes
+* No database required for MVP
