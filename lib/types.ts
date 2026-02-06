@@ -21,41 +21,8 @@ export interface Target {
   ports: Port[]
 }
 
-export interface Suggestion {
-  id: string
-  title: string
-  service: string
-  owaspTag: string
-  confidence: "high" | "medium" | "low"
-  description: string
-}
-
-export interface TechniqueInput {
-  name: string
-  placeholder: string
-  description: string
-}
-
-export interface Technique {
-  id: string
-  title: string
-  description: string
-  inputs: TechniqueInput[]
-  commands: string[]
-  expectedOutput: string
-  notes: string
-}
-
 // Knowledge Base Types
-export type KnowledgeDomain =
-  | "reconnaissance"
-  | "enumeration"
-  | "exploitation"
-  | "post-exploitation"
-  | "services"
-  | "ports"
-  | "tools"
-  | "owasp"
+export type KnowledgeDomain = string // Now a string to support user-defined categories
 
 export interface KnowledgeEntry {
   id: string
