@@ -16,7 +16,7 @@ import { useKnowledge } from "@/hooks/use-knowledge"
 import { useRules } from "@/hooks/use-rules"
 import { getFindings, upsertFindings, subscribeToFindings } from "@/lib/services/findings"
 import { createClient } from "@/lib/supabase/client"
-import { toast } from "sonner"
+import { notification } from "@/components/ui/notification"
 import type { Engagement, Target, Port, KnowledgeEntry, Rule } from "@/lib/types"
 
 export default function PentestNotebook() {
@@ -179,9 +179,10 @@ export default function PentestNotebook() {
       } catch (error) {
         console.error("Failed to save findings:", error)
         setSyncStatus("offline")
-        toast.error("Failed to save findings", {
-          description: error instanceof Error ? error.message : "An unknown error occurred"
-        })
+        notification.error(
+          "Failed to save findings",
+          error instanceof Error ? error.message : "An unknown error occurred"
+        )
       }
     },
     [activeEngagement?.id]
@@ -293,9 +294,10 @@ export default function PentestNotebook() {
                 setActiveEngagement(newEngagement)
               } catch (error) {
                 console.error("Failed to create engagement:", error)
-                toast.error("Failed to create engagement", {
-                  description: error instanceof Error ? error.message : "An unknown error occurred"
-                })
+                notification.error(
+                  "Failed to create engagement",
+                  error instanceof Error ? error.message : "An unknown error occurred"
+                )
               }
             }}
             className="rounded-md bg-primary px-4 py-2 text-primary-foreground"
@@ -327,12 +329,13 @@ export default function PentestNotebook() {
               if (activeEngagement?.id === engagementId) {
                 setActiveEngagement(engagements.find(e => e.id !== engagementId) || engagements[0] || null)
               }
-              toast.success("Engagement deleted")
+              notification.success("Engagement deleted")
             } catch (error) {
               console.error("Failed to delete engagement:", error)
-              toast.error("Failed to delete engagement", {
-                description: error instanceof Error ? error.message : "An unknown error occurred"
-              })
+              notification.error(
+                "Failed to delete engagement",
+                error instanceof Error ? error.message : "An unknown error occurred"
+              )
             }
           }}
           activeView={activeView}
@@ -356,12 +359,13 @@ export default function PentestNotebook() {
                         if (selectedTarget?.id === targetId) {
                           setSelectedTarget(null)
                         }
-                        toast.success("Target deleted")
+                        notification.success("Target deleted")
                       } catch (error) {
                         console.error("Failed to delete target:", error)
-                        toast.error("Failed to delete target", {
-                          description: error instanceof Error ? error.message : "An unknown error occurred"
-                        })
+                        notification.error(
+                          "Failed to delete target",
+                          error instanceof Error ? error.message : "An unknown error occurred"
+                        )
                       }
                     }}
                   />
@@ -405,25 +409,24 @@ export default function PentestNotebook() {
             onAddEntry={async (entry) => {
               try {
                 await createKnowledgeEntry(entry)
-                toast.success("Knowledge entry created")
+                notification.success("Knowledge entry created")
               } catch (error) {
                 console.error("Failed to create knowledge entry:", error)
-                toast.error("Failed to create knowledge entry", {
-                  description: error instanceof Error ? error.message : "An unknown error occurred"
-                })
+                notification.error(
+                  "Failed to create knowledge entry",
+                  error instanceof Error ? error.message : "An unknown error occurred"
+                )
               }
             }}
             onUpdateEntry={handleUpdateKnowledgeEntry}
             onDeleteEntry={async (id) => {
               try {
                 await deleteKnowledgeEntry(id)
-                toast.success("Knowledge entry deleted")
+                notification.success("Knowledge entry deleted")
               } catch (error: any) {
                 console.error("Failed to delete knowledge entry:", error)
                 const errorMessage = error?.message || error?.details || error?.hint || JSON.stringify(error) || "Unknown error"
-                toast.error("Failed to delete knowledge entry", {
-                  description: errorMessage
-                })
+                notification.error("Failed to delete knowledge entry", errorMessage)
               }
             }}
           />
@@ -437,12 +440,13 @@ export default function PentestNotebook() {
             onDuplicateRule={async (id) => {
               try {
                 await duplicateRule(id)
-                toast.success("Rule duplicated")
+                notification.success("Rule duplicated")
               } catch (error) {
                 console.error("Failed to duplicate rule:", error)
-                toast.error("Failed to duplicate rule", {
-                  description: error instanceof Error ? error.message : "An unknown error occurred"
-                })
+                notification.error(
+                  "Failed to duplicate rule",
+                  error instanceof Error ? error.message : "An unknown error occurred"
+                )
               }
             }}
             onDeleteRule={async (id) => {
@@ -451,12 +455,13 @@ export default function PentestNotebook() {
               }
               try {
                 await deleteRule(id)
-                toast.success("Rule deleted")
+                notification.success("Rule deleted")
               } catch (error) {
                 console.error("Failed to delete rule:", error)
-                toast.error("Failed to delete rule", {
-                  description: error instanceof Error ? error.message : "An unknown error occurred"
-                })
+                notification.error(
+                  "Failed to delete rule",
+                  error instanceof Error ? error.message : "An unknown error occurred"
+                )
               }
             }}
           />
@@ -467,7 +472,7 @@ export default function PentestNotebook() {
       <KeyboardShortcuts
         onSwitchPhase={async () => {
           if (!activeEngagement) {
-            toast.error("No engagement selected")
+            notification.error("No engagement selected")
             return
           }
           
@@ -484,14 +489,13 @@ export default function PentestNotebook() {
           
           try {
             await updateEngagement(activeEngagement.id, { phase: nextPhase })
-            toast.success("Phase updated", {
-              description: `Switched to ${nextPhase} phase`
-            })
+            notification.success("Phase updated", `Switched to ${nextPhase} phase`)
           } catch (error) {
             console.error("Failed to switch phase:", error)
-            toast.error("Failed to switch phase", {
-              description: error instanceof Error ? error.message : "An unknown error occurred"
-            })
+            notification.error(
+              "Failed to switch phase",
+              error instanceof Error ? error.message : "An unknown error occurred"
+            )
           }
         }}
         onNewFinding={() => setFindings((prev) => prev + "\n\n### New Finding\n")}

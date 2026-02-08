@@ -2,7 +2,7 @@ import React from "react"
 import type { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
-import { Toaster } from '@/components/ui/sonner'
+import { NotificationContainer } from '@/components/ui/notification'
 import { ErrorBoundary } from '@/components/error-boundary'
 import './globals.css'
 
@@ -48,7 +48,7 @@ export default function RootLayout({
         <ErrorBoundary>
           {children}
         </ErrorBoundary>
-        <Toaster />
+        <NotificationContainer />
         <Analytics />
       </body>
     </html>
