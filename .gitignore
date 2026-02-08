@@ -52,28 +52,8 @@ next-env.d.ts
 .DS_Store
 Thumbs.db
 
-# Supabase
-# Ignore local Supabase CLI files and generated files
-.supabase/
-supabase/.temp/
-supabase/.branches/
-supabase/.wrangler/
-
-# Keep Edge Functions tracked (they're application code)
-!supabase/functions/
-
-# Keep documentation tracked
-!supabase/*.md
-
-# Ignore migrations and schema files (keep schema private)
-# If you want to track migrations, uncomment the lines below:
-# !supabase/migrations/
-# !supabase/*.sql
-supabase/migrations/
-supabase/*.sql
-
-# Note: You'll need to manually apply migrations to new environments
-# Store migrations securely elsewhere if needed for backup
+# Supabase - Keep entire folder private
+supabase/
 
 # Project specific
 Vision/
