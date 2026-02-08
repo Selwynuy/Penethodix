@@ -52,8 +52,12 @@ next-env.d.ts
 .DS_Store
 Thumbs.db
 
-# Supabase - Keep entire folder private
+# Supabase - Keep migrations and functions private
 supabase/
+# But allow lib/supabase client files
+!lib/supabase/middleware.ts
+!lib/supabase/server.ts
+!lib/supabase/client.ts
 
 # Project specific
 Vision/
