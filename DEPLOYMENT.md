@@ -21,16 +21,31 @@
 
 ### 2. Environment Variables
 
+**⚠️ CRITICAL: This step is required or you'll get "Invalid API key" errors!**
+
 Add these in Vercel Dashboard → Settings → Environment Variables:
 
-```
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-```
+1. Go to **Settings** → **Environment Variables**
+2. Add these two variables:
 
-**For each environment:**
-- Production (live branch)
-- Preview (dev/production branches)
+   **Variable 1:**
+   - **Name**: `NEXT_PUBLIC_SUPABASE_URL`
+   - **Value**: Your Supabase Project URL (from Supabase Dashboard → Settings → API)
+   - **Environment**: Select all (Production, Preview, Development)
+
+   **Variable 2:**
+   - **Name**: `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - **Value**: Your Supabase anon/public key (from Supabase Dashboard → Settings → API)
+   - **Environment**: Select all (Production, Preview, Development)
+
+3. Click **Save**
+
+**To get your Supabase credentials:**
+- Go to Supabase Dashboard → Settings → API
+- Copy **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
+- Copy **anon/public key** → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+**⚠️ Important:** After adding variables, you must **Redeploy** your project for changes to take effect!
 
 ### 3. Supabase Configuration
 
