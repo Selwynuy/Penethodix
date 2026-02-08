@@ -132,28 +132,9 @@ export function useSupabaseTable<T extends { id: string }>(
     async (item: Partial<T>): Promise<T> => {
       setError(null)
       
-      // Check for duplicates before creating (prevent race conditions)
-      if (options?.filterColumn && options?.filterValue) {
-        const existing = data.find((d) => {
-          // Check if a similar item already exists
-          if (options.filterColumn && (d as any)[options.filterColumn] === options.filterValue) {
-            // For findings, check if engagement_id + target_id combination exists
-            if (tableName === 'findings' && (item as any).engagement_id && (item as any).target_id) {
-              return (d as any).engagement_id === (item as any).engagement_id && 
-                     (d as any).target_id === (item as any).target_id
-            }
-          }
-          return false
-        })
-        if (existing) {
-          const error = new Error("Item already exists")
-          setError(error)
-          throw error
-        }
-      }
-      
-      // Optimistic update - add temporary item
-      const tempId = `temp-${Date.now()}-${Math.random()}`
+      // Optimistic update - add temporary item with unique ID
+      // Each finding gets a unique UUID from the database, so we don't need to check for duplicates
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(7)}`
       const tempItem = { ...item, id: tempId } as T
       setData((prev) => {
         // Check if item matches filter
@@ -175,20 +156,28 @@ export function useSupabaseTable<T extends { id: string }>(
         setData((prev) => prev.filter((i) => i.id !== tempId))
         console.error(`Error creating item in ${tableName}:`, createError)
         setError(createError)
-        notification.error(`Failed to create item in ${tableName}`, createError.message)
+        
+        // Better error message for duplicate key errors
+        let errorMessage = createError.message
+        if (createError.message.includes("duplicate key") || createError.message.includes("unique constraint")) {
+          errorMessage = "A record with this combination already exists. Each finding has a unique ID, so you can create findings with similar names."
+        }
+        
+        notification.error(`Failed to create item in ${tableName}`, errorMessage)
         throw createError
       }
       
-      // Replace temp item with real item
+      // Replace temp item with real item (database-generated UUID)
       setData((prev) => {
         const filtered = prev.filter((i) => i.id !== tempId)
+        // Check if the new item already exists (shouldn't happen, but safety check)
         const exists = filtered.some((i) => i.id === newItem.id)
         return exists ? filtered : [...filtered, newItem]
       })
       
       return newItem
     },
-    [tableName, supabase, options?.filterColumn, options?.filterValue, data]
+    [tableName, supabase, options?.filterColumn, options?.filterValue]
   )
 
   const updateItem = useCallback(
