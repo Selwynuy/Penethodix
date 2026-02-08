@@ -132,8 +132,28 @@ export function useSupabaseTable<T extends { id: string }>(
     async (item: Partial<T>): Promise<T> => {
       setError(null)
       
+      // Check for duplicates before creating (prevent race conditions)
+      if (options?.filterColumn && options?.filterValue) {
+        const existing = data.find((d) => {
+          // Check if a similar item already exists
+          if (options.filterColumn && (d as any)[options.filterColumn] === options.filterValue) {
+            // For findings, check if engagement_id + target_id combination exists
+            if (tableName === 'findings' && (item as any).engagement_id && (item as any).target_id) {
+              return (d as any).engagement_id === (item as any).engagement_id && 
+                     (d as any).target_id === (item as any).target_id
+            }
+          }
+          return false
+        })
+        if (existing) {
+          const error = new Error("Item already exists")
+          setError(error)
+          throw error
+        }
+      }
+      
       // Optimistic update - add temporary item
-      const tempId = `temp-${Date.now()}`
+      const tempId = `temp-${Date.now()}-${Math.random()}`
       const tempItem = { ...item, id: tempId } as T
       setData((prev) => {
         // Check if item matches filter
@@ -168,7 +188,7 @@ export function useSupabaseTable<T extends { id: string }>(
       
       return newItem
     },
-    [tableName, supabase, options?.filterColumn, options?.filterValue]
+    [tableName, supabase, options?.filterColumn, options?.filterValue, data]
   )
 
   const updateItem = useCallback(
