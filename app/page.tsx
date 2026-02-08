@@ -14,6 +14,7 @@ import { useRules } from "@/hooks/use-rules"
 import { useFindings } from "@/hooks/use-findings"
 import { createClient } from "@/lib/supabase/client"
 import { notification } from "@/components/ui/notification"
+import { Button } from "@/components/ui/button"
 import type { Engagement, Target, Port, KnowledgeEntry, Rule, Finding } from "@/lib/types"
 
 export default function PentestNotebook() {
@@ -154,11 +155,13 @@ export default function PentestNotebook() {
 
   if (!activeEngagement && engagements.length === 0) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
+      <div className="flex h-screen items-center justify-center bg-background relative z-10">
+        <div className="text-center space-y-4">
           <p className="mb-4 text-muted-foreground">No engagements found</p>
-          <button
-            onClick={async () => {
+          <Button
+            onClick={async (e) => {
+              e.preventDefault()
+              e.stopPropagation()
               try {
                 const newEngagement = await createEngagement({
                   name: "New Engagement",
@@ -166,18 +169,21 @@ export default function PentestNotebook() {
                   status: "active",
                 })
                 setActiveEngagement(newEngagement)
+                notification.success("Engagement created")
               } catch (error) {
                 console.error("Failed to create engagement:", error)
+                const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
                 notification.error(
                   "Failed to create engagement",
-                  error instanceof Error ? error.message : "An unknown error occurred"
+                  errorMessage
                 )
               }
             }}
-            className="rounded-md bg-primary px-4 py-2 text-primary-foreground"
+            type="button"
+            className="relative z-20"
           >
             Create Engagement
-          </button>
+          </Button>
         </div>
       </div>
     )

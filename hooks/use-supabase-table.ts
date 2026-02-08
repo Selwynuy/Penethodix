@@ -111,7 +111,6 @@ export function useSupabaseTable<T extends { id: string }>(
         )
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
-            console.log(`Subscribed to ${tableName} changes for ${options?.filterValue || 'all'}`);
           }
         })
 

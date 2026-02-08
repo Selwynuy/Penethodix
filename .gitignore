@@ -61,4 +61,7 @@ Vision/
 # Documentation (keep private)
 PRODUCTION_READINESS.md
 SECURITY_IMPROVEMENTS.md
+AUTH_SETUP.md
+QUICK_AUTH_SETUP.md
+GOOGLE_OAUTH_FIX.md
 
