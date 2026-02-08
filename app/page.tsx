@@ -15,6 +15,7 @@ import { useTargets } from "@/hooks/use-targets"
 import { useKnowledge } from "@/hooks/use-knowledge"
 import { useRules } from "@/hooks/use-rules"
 import { getFindings, upsertFindings, subscribeToFindings } from "@/lib/services/findings"
+import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import type { Engagement, Target, Port, KnowledgeEntry, Rule } from "@/lib/types"
 
@@ -26,6 +27,7 @@ export default function PentestNotebook() {
   const [lastSavedFindings, setLastSavedFindings] = useState("")
   const lastSavedFindingsRef = useRef<string>("")
   const currentFindingsRef = useRef<string>("")
+  const [syncStatus, setSyncStatus] = useState<"synced" | "syncing" | "offline">("synced")
 
   // Supabase hooks
   const {
@@ -33,6 +35,7 @@ export default function PentestNotebook() {
     loading: engagementsLoading,
     createEngagement,
     updateEngagement,
+    deleteEngagement,
   } = useEngagements()
 
   const [activeEngagement, setActiveEngagement] = useState<Engagement | null>(null)
@@ -43,6 +46,7 @@ export default function PentestNotebook() {
     createTarget,
     updateTarget,
     addPort,
+    deleteTarget,
   } = useTargets(activeEngagement?.id || null)
 
   const {
@@ -57,6 +61,8 @@ export default function PentestNotebook() {
     rules,
     loading: rulesLoading,
     updateRule,
+    duplicateRule,
+    deleteRule,
   } = useRules()
 
   // Set first engagement as active when engagements load
@@ -118,17 +124,61 @@ export default function PentestNotebook() {
     return unsubscribe
   }, [activeEngagement?.id])
 
+  // Sync status detection
+  useEffect(() => {
+    const supabase = createClient()
+    let isOnline = navigator.onLine
+
+    const handleOnline = () => {
+      isOnline = true
+      setSyncStatus("synced")
+    }
+    const handleOffline = () => {
+      isOnline = false
+      setSyncStatus("offline")
+    }
+
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+
+    // Check Supabase connection
+    const checkConnection = async () => {
+      try {
+        const { error } = await supabase.from("engagements").select("id").limit(1)
+        if (error) {
+          setSyncStatus("offline")
+        } else {
+          setSyncStatus(isOnline ? "synced" : "offline")
+        }
+      } catch {
+        setSyncStatus("offline")
+      }
+    }
+
+    checkConnection()
+    const interval = setInterval(checkConnection, 30000) // Check every 30 seconds
+
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+      clearInterval(interval)
+    }
+  }, [])
+
   // Save findings with debounce
   const saveFindings = useCallback(
     async (content: string) => {
       if (!activeEngagement?.id) return
       try {
+        setSyncStatus("syncing")
         await upsertFindings(activeEngagement.id, content)
         setLastSavedFindings(content)
         lastSavedFindingsRef.current = content
         currentFindingsRef.current = content
+        setSyncStatus("synced")
       } catch (error) {
         console.error("Failed to save findings:", error)
+        setSyncStatus("offline")
         toast.error("Failed to save findings", {
           description: error instanceof Error ? error.message : "An unknown error occurred"
         })
@@ -261,7 +311,7 @@ export default function PentestNotebook() {
     <div className="flex h-screen flex-col bg-background text-foreground">
       <AppHeader
         activeEngagement={activeEngagement}
-        syncStatus="synced"
+        syncStatus={syncStatus}
       />
       
       <div className="flex flex-1 overflow-hidden">
@@ -271,6 +321,20 @@ export default function PentestNotebook() {
           engagements={engagements}
           activeEngagement={activeEngagement}
           onEngagementSelect={setActiveEngagement}
+          onEngagementDelete={async (engagementId) => {
+            try {
+              await deleteEngagement(engagementId)
+              if (activeEngagement?.id === engagementId) {
+                setActiveEngagement(engagements.find(e => e.id !== engagementId) || engagements[0] || null)
+              }
+              toast.success("Engagement deleted")
+            } catch (error) {
+              console.error("Failed to delete engagement:", error)
+              toast.error("Failed to delete engagement", {
+                description: error instanceof Error ? error.message : "An unknown error occurred"
+              })
+            }
+          }}
           activeView={activeView}
           onViewChange={setActiveView}
         />
@@ -286,6 +350,20 @@ export default function PentestNotebook() {
                     onTargetSelect={setSelectedTarget}
                     onAddTarget={handleAddTarget}
                     onAddPort={handleAddPort}
+                    onDeleteTarget={async (targetId) => {
+                      try {
+                        await deleteTarget(targetId)
+                        if (selectedTarget?.id === targetId) {
+                          setSelectedTarget(null)
+                        }
+                        toast.success("Target deleted")
+                      } catch (error) {
+                        console.error("Failed to delete target:", error)
+                        toast.error("Failed to delete target", {
+                          description: error instanceof Error ? error.message : "An unknown error occurred"
+                        })
+                      }
+                    }}
                   />
                 </ResizablePanel>
                 <ResizableHandle withHandle />
@@ -356,6 +434,31 @@ export default function PentestNotebook() {
             rules={rules}
             onToggleRule={handleToggleRule}
             onUpdateRule={handleUpdateRule}
+            onDuplicateRule={async (id) => {
+              try {
+                await duplicateRule(id)
+                toast.success("Rule duplicated")
+              } catch (error) {
+                console.error("Failed to duplicate rule:", error)
+                toast.error("Failed to duplicate rule", {
+                  description: error instanceof Error ? error.message : "An unknown error occurred"
+                })
+              }
+            }}
+            onDeleteRule={async (id) => {
+              if (!confirm("Are you sure you want to delete this rule? This action cannot be undone.")) {
+                return
+              }
+              try {
+                await deleteRule(id)
+                toast.success("Rule deleted")
+              } catch (error) {
+                console.error("Failed to delete rule:", error)
+                toast.error("Failed to delete rule", {
+                  description: error instanceof Error ? error.message : "An unknown error occurred"
+                })
+              }
+            }}
           />
         )}
       </div>

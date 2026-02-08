@@ -144,6 +144,23 @@ export function useRules() {
     return mapped
   }
 
+  const duplicateRule = async (id: string) => {
+    const ruleToDuplicate = rules.find((r) => r.id === id)
+    if (!ruleToDuplicate) throw new Error("Rule not found")
+
+    const duplicatedRule: Omit<Rule, "id" | "createdAt" | "updatedAt"> = {
+      name: `${ruleToDuplicate.name} (Copy)`,
+      description: ruleToDuplicate.description,
+      phase: ruleToDuplicate.phase,
+      enabled: false, // Disable duplicated rules by default
+      tags: [...ruleToDuplicate.tags],
+      conditions: JSON.parse(JSON.stringify(ruleToDuplicate.conditions)),
+      suggestions: JSON.parse(JSON.stringify(ruleToDuplicate.suggestions)),
+    }
+
+    return createRule(duplicatedRule)
+  }
+
   const deleteRule = async (id: string) => {
     // Optimistically remove from state
     setRules((prev) => prev.filter((rule) => rule.id !== id))
@@ -168,6 +185,7 @@ export function useRules() {
     error,
     createRule,
     updateRule,
+    duplicateRule,
     deleteRule,
   }
 }

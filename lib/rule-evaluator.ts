@@ -107,9 +107,29 @@ function evaluateCondition(
     }
 
     case "tag_present": {
-      // This would check tags on targets or engagement
-      // For now, we'll skip this as it's not in the current data model
-      return false
+      // Check if tag exists in target tags, engagement tags, or rule tags
+      const tagValue = condition.value.toLowerCase()
+      
+      // Check engagement tags (if we add them to engagement model)
+      // For now, check if any target has matching tags
+      const hasTag = targetsToCheck.some((target) => {
+        // Check if target has tags (extend Target type if needed)
+        // For now, we'll check if the tag matches any service name as a workaround
+        // In a full implementation, you'd add a tags field to Target
+        return target.ports.some((port) => 
+          port.service.toLowerCase().includes(tagValue) ||
+          port.version.toLowerCase().includes(tagValue)
+        )
+      })
+      
+      switch (condition.operator) {
+        case "equals":
+          return hasTag
+        case "contains":
+          return hasTag
+        default:
+          return false
+      }
     }
 
     default:
