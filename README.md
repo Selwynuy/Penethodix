@@ -105,11 +105,16 @@ pnpm install
 ```
 
 3. Set up environment variables:
-Create a `.env.local` file in the root directory:
+Create a `.env.local` file in the root directory (or use `.env.example` as a template):
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
+
+**For Vercel Deployment:**
+Add these environment variables in your Vercel project settings:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 4. Set up the database:
 Run the SQL migrations in the `supabase/` directory to create the necessary tables and policies.
