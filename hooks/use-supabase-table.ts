@@ -160,7 +160,11 @@ export function useSupabaseTable<T extends { id: string }>(
         // Better error message for duplicate key errors
         let errorMessage = createError.message
         if (createError.message.includes("duplicate key") || createError.message.includes("unique constraint")) {
-          errorMessage = "A record with this combination already exists. Each finding has a unique ID, so you can create findings with similar names."
+          if (tableName === 'findings' && createError.message.includes("engagement_id")) {
+            errorMessage = "Database constraint error: There's a UNIQUE constraint on engagement_id preventing multiple findings. Run the migration 'fix_findings_unique_constraint.sql' to fix this."
+          } else {
+            errorMessage = "A database constraint is preventing this. Each finding has a unique UUID ID, so you should be able to create multiple findings."
+          }
         }
         
         notification.error(`Failed to create item in ${tableName}`, errorMessage)
