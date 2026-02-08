@@ -129,50 +129,14 @@ export default function PentestNotebook() {
   const handleNewFinding = useCallback(async () => {
     if (!activeEngagement) return;
     
-    // Validate: Must have at least one target
-    if (targets.length === 0) {
-      notification.error(
-        "No Targets Available",
-        "You must create at least one target before adding findings. Add a target first."
-      )
-      return
-    }
-    
-    try {
-      // Use first target as default
-      const targetId = targets[0]?.id || null
-      if (!targetId) {
-        notification.error(
-          "Target Required",
-          "You must have at least one target to create a finding."
-        )
-        return
-      }
-
-      await createFinding({
-        engagement_id: activeEngagement.id,
-        title: "New Finding",
-        severity: "medium",
-        status: "open",
-        description: "",
-        target_id: targetId, // Require target_id
-      });
-      notification.success("New finding created")
-    } catch(error) {
-      console.error("Failed to create new finding:", error)
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-      
-      // Handle duplicate key error
-      if (errorMessage.includes("duplicate key") || errorMessage.includes("unique constraint")) {
-        notification.error(
-          "Duplicate Finding",
-          "A finding already exists. Please refresh and try again."
-        )
-      } else {
-        notification.error("Failed to create finding", errorMessage)
-      }
-    }
-  }, [activeEngagement, createFinding, targets]);
+    // Note: This keyboard shortcut handler is kept for compatibility
+    // but the actual finding creation should be done through FindingsEditor
+    // which requires a selected target
+    notification.info(
+      "Select Target First",
+      "Please select a target in the Targets panel, then click 'New Finding' to add a finding for that target."
+    )
+  }, [activeEngagement]);
 
 
   // Loading state
