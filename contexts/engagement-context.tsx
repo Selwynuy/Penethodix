@@ -40,6 +40,16 @@ export function EngagementProvider({ children }: { children: ReactNode }) {
       setActiveEngagement(engagements.length > 0 ? engagements[0] : null)
     }
   }, [engagements, activeEngagement])
+
+  // Update active engagement when it's updated in the engagements array
+  useEffect(() => {
+    if (activeEngagement) {
+      const updatedEngagement = engagements.find((e) => e.id === activeEngagement.id)
+      if (updatedEngagement) {
+        setActiveEngagement(updatedEngagement)
+      }
+    }
+  }, [engagements, activeEngagement])
   
   const value = useMemo(() => ({
     engagements,
