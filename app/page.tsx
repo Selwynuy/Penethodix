@@ -15,6 +15,7 @@ import { useTargets } from "@/hooks/use-targets"
 import { useKnowledge } from "@/hooks/use-knowledge"
 import { useRules } from "@/hooks/use-rules"
 import { getFindings, upsertFindings, subscribeToFindings } from "@/lib/services/findings"
+import { toast } from "sonner"
 import type { Engagement, Target, Port, KnowledgeEntry, Rule } from "@/lib/types"
 
 export default function PentestNotebook() {
@@ -22,6 +23,7 @@ export default function PentestNotebook() {
   const [activeView, setActiveView] = useState<SidebarView>("engagements")
   const [selectedTarget, setSelectedTarget] = useState<Target | null>(null)
   const [findings, setFindings] = useState("")
+  const [lastSavedFindings, setLastSavedFindings] = useState("")
   const lastSavedFindingsRef = useRef<string>("")
   const currentFindingsRef = useRef<string>("")
 
@@ -84,11 +86,13 @@ export default function PentestNotebook() {
       try {
         const content = await getFindings(engagementId)
         setFindings(content)
+        setLastSavedFindings(content)
         lastSavedFindingsRef.current = content
         currentFindingsRef.current = content
       } catch (error) {
         console.error("Failed to load findings:", error)
         setFindings("")
+        setLastSavedFindings("")
         lastSavedFindingsRef.current = ""
         currentFindingsRef.current = ""
       }
@@ -105,6 +109,7 @@ export default function PentestNotebook() {
       if (content !== lastSavedFindingsRef.current && 
           currentFindingsRef.current === lastSavedFindingsRef.current) {
         setFindings(content)
+        setLastSavedFindings(content)
         lastSavedFindingsRef.current = content
         currentFindingsRef.current = content
       }
@@ -119,14 +124,41 @@ export default function PentestNotebook() {
       if (!activeEngagement?.id) return
       try {
         await upsertFindings(activeEngagement.id, content)
+        setLastSavedFindings(content)
         lastSavedFindingsRef.current = content
         currentFindingsRef.current = content
       } catch (error) {
         console.error("Failed to save findings:", error)
+        toast.error("Failed to save findings", {
+          description: error instanceof Error ? error.message : "An unknown error occurred"
+        })
       }
     },
     [activeEngagement?.id]
   )
+
+  // Debounced auto-save for findings
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
+  useEffect(() => {
+    // Clear existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current)
+    }
+
+    // Only auto-save if content has changed and there's an active engagement
+    if (activeEngagement?.id && findings !== lastSavedFindingsRef.current) {
+      autoSaveTimeoutRef.current = setTimeout(() => {
+        saveFindings(findings)
+      }, 2500) // 2.5 seconds after typing stops
+    }
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
+    }
+  }, [findings, activeEngagement?.id, saveFindings])
 
 
   const handleCopyCommand = (command: string) => {
@@ -211,11 +243,9 @@ export default function PentestNotebook() {
                 setActiveEngagement(newEngagement)
               } catch (error) {
                 console.error("Failed to create engagement:", error)
-                if (error instanceof Error) {
-                  alert(`Error: ${error.message}`)
-                } else {
-                  alert(`Error: ${JSON.stringify(error)}`)
-                }
+                toast.error("Failed to create engagement", {
+                  description: error instanceof Error ? error.message : "An unknown error occurred"
+                })
               }
             }}
             className="rounded-md bg-primary px-4 py-2 text-primary-foreground"
@@ -265,6 +295,7 @@ export default function PentestNotebook() {
                     onChange={handleFindingsChange}
                     onSave={handleFindingsSave}
                     phase={activeEngagement.phase}
+                    hasUnsavedChanges={findings !== lastSavedFindings}
                   />
                 </ResizablePanel>
                 <ResizableHandle withHandle />
@@ -296,21 +327,25 @@ export default function PentestNotebook() {
             onAddEntry={async (entry) => {
               try {
                 await createKnowledgeEntry(entry)
+                toast.success("Knowledge entry created")
               } catch (error) {
                 console.error("Failed to create knowledge entry:", error)
-                if (error instanceof Error) {
-                  alert(`Error: ${error.message}`)
-                }
+                toast.error("Failed to create knowledge entry", {
+                  description: error instanceof Error ? error.message : "An unknown error occurred"
+                })
               }
             }}
             onUpdateEntry={handleUpdateKnowledgeEntry}
             onDeleteEntry={async (id) => {
               try {
                 await deleteKnowledgeEntry(id)
+                toast.success("Knowledge entry deleted")
               } catch (error: any) {
                 console.error("Failed to delete knowledge entry:", error)
                 const errorMessage = error?.message || error?.details || error?.hint || JSON.stringify(error) || "Unknown error"
-                alert(`Error deleting entry: ${errorMessage}`)
+                toast.error("Failed to delete knowledge entry", {
+                  description: errorMessage
+                })
               }
             }}
           />
@@ -327,7 +362,35 @@ export default function PentestNotebook() {
 
 
       <KeyboardShortcuts
-        onSwitchPhase={() => console.log("[v0] Switch phase")}
+        onSwitchPhase={async () => {
+          if (!activeEngagement) {
+            toast.error("No engagement selected")
+            return
+          }
+          
+          const phases: Engagement["phase"][] = [
+            "reconnaissance",
+            "enumeration",
+            "exploitation",
+            "post-exploitation",
+            "reporting"
+          ]
+          const currentIndex = phases.indexOf(activeEngagement.phase)
+          const nextIndex = (currentIndex + 1) % phases.length
+          const nextPhase = phases[nextIndex]
+          
+          try {
+            await updateEngagement(activeEngagement.id, { phase: nextPhase })
+            toast.success("Phase updated", {
+              description: `Switched to ${nextPhase} phase`
+            })
+          } catch (error) {
+            console.error("Failed to switch phase:", error)
+            toast.error("Failed to switch phase", {
+              description: error instanceof Error ? error.message : "An unknown error occurred"
+            })
+          }
+        }}
         onNewFinding={() => setFindings((prev) => prev + "\n\n### New Finding\n")}
       />
     </div>
