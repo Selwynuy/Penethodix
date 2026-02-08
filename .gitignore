@@ -58,3 +58,7 @@ supabase/
 # Project specific
 Vision/
 
+# Documentation (keep private)
+PRODUCTION_READINESS.md
+SECURITY_IMPROVEMENTS.md
+
