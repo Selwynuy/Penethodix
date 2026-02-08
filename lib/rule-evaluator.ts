@@ -1,196 +1,93 @@
-import type { Rule, RuleCondition, RuleSuggestion, Engagement, Target } from "./types"
+import type { Rule, Engagement, Target } from "./types"
 
-export interface EvaluatedSuggestion extends RuleSuggestion {
+export interface EvaluatedSuggestion {
   ruleName: string
   ruleId: string
   service?: string
+  title: string
+  description: string
+  confidence: "high" | "medium" | "low"
+  owaspTag?: string
+  commands?: string[]
 }
 
 export interface GroupedSuggestions {
   [service: string]: EvaluatedSuggestion[]
 }
 
-/**
- * Evaluates a single condition against the engagement state
- */
-function evaluateCondition(
-  condition: RuleCondition,
-  engagement: Engagement,
-  targets: Target[],
-  selectedTarget?: Target | null
-): boolean {
-  // If a target is selected, only evaluate against that target
-  const targetsToCheck = selectedTarget ? [selectedTarget] : targets
-
-  switch (condition.type) {
-    case "service_detected": {
-      const serviceValue = condition.value.toLowerCase()
-      const hasService = targetsToCheck.some((target) =>
-        target.ports.some((port) => {
-          const portService = port.service.toLowerCase()
-          switch (condition.operator) {
-            case "equals":
-              return portService === serviceValue
-            case "contains":
-              return portService.includes(serviceValue)
-            case "matches": {
-              try {
-                const regex = new RegExp(condition.value, "i")
-                return regex.test(portService)
-              } catch {
-                return false
-              }
-            }
-            default:
-              return false
-          }
-        })
-      )
-      return hasService
-    }
-
-    case "port_open": {
-      const portValue = parseInt(condition.value, 10)
-      if (isNaN(portValue)) return false
-
-      const hasPort = targetsToCheck.some((target) =>
-        target.ports.some((port) => {
-          if (port.status !== "open") return false
-          switch (condition.operator) {
-            case "equals":
-              return port.port === portValue
-            case "greater_than":
-              return port.port > portValue
-            case "less_than":
-              return port.port < portValue
-            default:
-              return false
-          }
-        })
-      )
-      return hasPort
-    }
-
-    case "version_match": {
-      const versionValue = condition.value.toLowerCase()
-      const hasVersion = targetsToCheck.some((target) =>
-        target.ports.some((port) => {
-          const portVersion = port.version.toLowerCase()
-          switch (condition.operator) {
-            case "equals":
-              return portVersion === versionValue
-            case "contains":
-              return portVersion.includes(versionValue)
-            case "matches": {
-              try {
-                const regex = new RegExp(condition.value, "i")
-                return regex.test(portVersion)
-              } catch {
-                return false
-              }
-            }
-            default:
-              return false
-          }
-        })
-      )
-      return hasVersion
-    }
-
-    case "phase_active": {
-      switch (condition.operator) {
-        case "equals":
-          return engagement.phase === condition.value
-        default:
-          return false
-      }
-    }
-
-    case "tag_present": {
-      // Check if tag exists in target tags, engagement tags, or rule tags
-      const tagValue = condition.value.toLowerCase()
-      
-      // Check engagement tags (if we add them to engagement model)
-      // For now, check if any target has matching tags
-      const hasTag = targetsToCheck.some((target) => {
-        // Check if target has tags (extend Target type if needed)
-        // For now, we'll check if the tag matches any service name as a workaround
-        // In a full implementation, you'd add a tags field to Target
-        return target.ports.some((port) => 
-          port.service.toLowerCase().includes(tagValue) ||
-          port.version.toLowerCase().includes(tagValue)
-        )
-      })
-      
-      switch (condition.operator) {
-        case "equals":
-          return hasTag
-        case "contains":
-          return hasTag
-        default:
-          return false
-      }
-    }
-
-    default:
-      return false
+// Supabase Edge Function URL for rule evaluation
+const getEvaluateRulesUrl = () => {
+  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!baseUrl) {
+    return null
   }
+  return `${baseUrl}/functions/v1/evaluate-rules`
 }
 
-/**
- * Evaluates all conditions for a rule (AND logic - all must pass)
- */
-export function evaluateRuleConditions(
-  rule: Rule,
-  engagement: Engagement,
-  targets: Target[],
-  selectedTarget?: Target | null
-): boolean {
-  if (!rule.enabled) return false
-  if (rule.phase !== engagement.phase) return false
-
-  // All conditions must pass (AND logic)
-  return rule.conditions.every((condition) =>
-    evaluateCondition(condition, engagement, targets, selectedTarget)
-  )
-}
+// Client-side evaluation removed - using Edge Function only for better security and performance
 
 /**
- * Evaluates all enabled rules and returns matching suggestions
+ * Evaluates all enabled rules by calling the Supabase Edge Function.
+ * Server-side evaluation provides:
+ * - Security: Evaluation logic not exposed to client
+ * - Performance: Offloads computation from browser
+ * - ReDoS protection: Server-side regex controls
+ * - Scalability: Can handle large rule sets efficiently
+ * 
+ * NOTE: Edge Function must be deployed for this to work.
+ * If the function is unavailable, suggestions will be empty (graceful degradation).
  */
-export function evaluateAllRules(
+export async function evaluateAllRules(
   rules: Rule[],
   engagement: Engagement,
   targets: Target[],
   selectedTarget?: Target | null
-): EvaluatedSuggestion[] {
-  const suggestions: EvaluatedSuggestion[] = []
-
-  for (const rule of rules) {
-    if (evaluateRuleConditions(rule, engagement, targets, selectedTarget)) {
-      // Extract service from conditions for grouping
-      const serviceCondition = rule.conditions.find(
-        (c) => c.type === "service_detected"
-      )
-      const service = serviceCondition?.value?.toLowerCase() || undefined
-
-      // Add all suggestions from this rule
-      for (const suggestion of rule.suggestions) {
-        suggestions.push({
-          ...suggestion,
-          ruleName: rule.name,
-          ruleId: rule.id,
-          service,
-        })
-      }
-    }
+): Promise<EvaluatedSuggestion[]> {
+  const functionUrl = getEvaluateRulesUrl()
+  
+  if (!functionUrl) {
+    console.error("NEXT_PUBLIC_SUPABASE_URL not set. Cannot evaluate rules.")
+    return []
   }
 
-  return suggestions
+  try {
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
+
+    const response = await fetch(functionUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""}`,
+      },
+      body: JSON.stringify({ rules, engagement, targets, selectedTarget }),
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeoutId)
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(`Edge Function failed: ${errorData.error || response.statusText}`)
+    }
+
+    const suggestions: EvaluatedSuggestion[] = await response.json()
+    return suggestions
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      console.warn("Edge Function request was aborted or timed out")
+    } else {
+      console.error("Error calling Edge Function:", error)
+    }
+    // Return empty array - app won't crash, but suggestions won't work
+    // This ensures graceful degradation if Edge Function isn't deployed
+    return []
+  }
 }
 
 /**
- * Groups suggestions by service name
+ * Groups suggestions by service name (can remain client-side as it's not compute-intensive)
  */
 export function groupSuggestionsByService(
   suggestions: EvaluatedSuggestion[]

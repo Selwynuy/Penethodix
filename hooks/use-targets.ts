@@ -1,13 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { useSupabaseTable } from "./use-supabase-table"
 import type { Target, Port } from "@/lib/types"
 import type { Database } from "@/lib/supabase/database.types"
 
 type TargetRow = Database["public"]["Tables"]["targets"]["Row"]
 
-function mapTarget(row: TargetRow): Target {
+function mapTargetFromRow(row: TargetRow): Target {
   return {
     id: row.id,
     ip: row.ip,
@@ -15,131 +14,78 @@ function mapTarget(row: TargetRow): Target {
     inScope: row.in_scope,
     discoveredDuringRecon: row.discovered_during_recon,
     ports: (row.ports as unknown as Port[]) || [],
+    engagement_id: row.engagement_id,
   }
 }
 
+function mapTargetToRow(target: Partial<Target>): Partial<TargetRow> {
+  const row: Partial<TargetRow> = { ...target as any } // Cast to any to allow direct mapping initially
+
+  if (target.inScope !== undefined) {
+    row.in_scope = target.inScope
+    delete (row as any).inScope // Remove frontend-specific field
+  }
+  if (target.discoveredDuringRecon !== undefined) {
+    row.discovered_during_recon = target.discoveredDuringRecon
+    delete (row as any).discoveredDuringRecon // Remove frontend-specific field
+  }
+  // Ensure ports is handled as JSONB in Supabase, the type casting in mapTargetFromRow handles retrieval
+  if (target.ports !== undefined) {
+    row.ports = target.ports as unknown as Json // Supabase expects Json for JSONB columns
+  }
+  
+  return row
+}
+
+// Supabase generated types for JSONB columns can sometimes be 'Json' or 'unknown'
+type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
 export function useTargets(engagementId: string | null) {
-  const [targets, setTargets] = useState<Target[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-  const supabase = createClient()
+  const {
+    data: targetRows,
+    loading,
+    error,
+    createItem: createTargetRow,
+    updateItem: updateTargetRow,
+    deleteItem: deleteTarget,
+  } = useSupabaseTable<TargetRow>("targets", "id", {
+    filterColumn: "engagement_id",
+    filterValue: engagementId,
+    orderBy: { column: "created_at", ascending: true },
+  })
 
-  useEffect(() => {
-    if (!engagementId) {
-      setTargets([])
-      setLoading(false)
-      return
-    }
+  const targets: Target[] = targetRows.map(mapTargetFromRow)
 
-    // Fetch initial targets
-    async function fetchTargets() {
-      try {
-        setLoading(true)
-        const { data, error } = await supabase
-          .from("targets")
-          .select("*")
-          .eq("engagement_id", engagementId)
-          .order("created_at", { ascending: true })
-
-        if (error) throw error
-        setTargets(data.map(mapTarget))
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error("Failed to fetch targets"))
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchTargets()
-
-    // Subscribe to real-time changes
-    const channel = supabase
-      .channel(`targets-changes-${engagementId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "targets",
-          filter: `engagement_id=eq.${engagementId}`,
-        },
-        async () => {
-          const { data } = await supabase
-            .from("targets")
-            .select("*")
-            .eq("engagement_id", engagementId)
-            .order("created_at", { ascending: true })
-          if (data) {
-            setTargets(data.map(mapTarget))
-          }
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [engagementId, supabase])
-
-  const createTarget = async (target: Omit<Target, "id">) => {
-    if (!engagementId) throw new Error("Engagement ID is required")
-
-    const { data, error } = await supabase
-      .from("targets")
-      .insert({
-        engagement_id: engagementId,
-        ip: target.ip,
-        label: target.label || null,
-        in_scope: target.inScope,
-        discovered_during_recon: target.discoveredDuringRecon,
-        ports: target.ports as unknown,
-      })
-      .select()
-      .single()
-
-    if (error) throw error
-    return mapTarget(data)
+  const createTarget = async (target: Omit<Target, "id" | "engagement_id" | "ports">) => {
+    if (!engagementId) throw new Error("Engagement ID is required to create a target")
+    const targetWithPorts = { ...target, ports: [] as Port[] }
+    const newTargetRow = await createTargetRow(mapTargetToRow({ ...targetWithPorts, engagement_id: engagementId }))
+    return mapTargetFromRow(newTargetRow)
   }
 
   const updateTarget = async (id: string, updates: Partial<Target>) => {
-    const updateData: any = {
-      updated_at: new Date().toISOString(),
-    }
-
-    if (updates.ip !== undefined) updateData.ip = updates.ip
-    if (updates.label !== undefined) updateData.label = updates.label || null
-    if (updates.inScope !== undefined) updateData.in_scope = updates.inScope
-    if (updates.discoveredDuringRecon !== undefined)
-      updateData.discovered_during_recon = updates.discoveredDuringRecon
-    if (updates.ports !== undefined) updateData.ports = updates.ports as unknown
-
-    const { data, error } = await supabase
-      .from("targets")
-      .update(updateData)
-      .eq("id", id)
-      .select()
-      .single()
-
-    if (error) throw error
-    return mapTarget(data)
+    const updatedTargetRow = await updateTargetRow(id, mapTargetToRow(updates))
+    return mapTargetFromRow(updatedTargetRow)
   }
 
   const addPort = async (targetId: string, port: Port) => {
     const target = targets.find((t) => t.id === targetId)
     if (!target) throw new Error("Target not found")
 
-    // Check if port already exists
     if (target.ports.some((p) => p.port === port.port)) {
+      notification.info("Port already exists on this target.")
       return target
     }
 
     const updatedPorts = [...target.ports, port]
-    return updateTarget(targetId, { ports: updatedPorts })
-  }
-
-  const deleteTarget = async (id: string) => {
-    const { error } = await supabase.from("targets").delete().eq("id", id)
-    if (error) throw error
+    const updatedTarget = await updateTarget(targetId, { ports: updatedPorts })
+    return updatedTarget
   }
 
   return {

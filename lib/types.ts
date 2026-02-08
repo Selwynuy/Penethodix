@@ -70,3 +70,19 @@ export interface Rule {
   createdAt: string
   updatedAt: string
 }
+
+// Findings Types
+export type FindingSeverity = "critical" | "high" | "medium" | "low" | "informational"
+export type FindingStatus = "open" | "in_progress" | "retesting" | "closed"
+
+export interface Finding {
+  id: string
+  engagement_id: string
+  target_id?: string | null
+  title: string
+  severity: FindingSeverity
+  status: FindingStatus
+  description: string
+  created_at: string
+  updated_at: string
+}

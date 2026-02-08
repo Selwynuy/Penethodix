@@ -117,7 +117,20 @@ Add these environment variables in your Vercel project settings:
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 4. Set up the database:
-Run the SQL migrations in the `supabase/` directory to create the necessary tables and policies.
+   - **Option A (Recommended)**: Use Supabase CLI:
+     ```bash
+     npm install -g supabase
+     supabase login
+     supabase link --project-ref your-project-ref
+     supabase db push
+     ```
+   - **Option B (Manual)**: Run migrations in order:
+     1. `supabase/schema.sql` - Initial schema
+     2. `supabase/migrations/create_findings_table.sql` - Findings table
+     3. `supabase/migrations/alter_findings_table.sql` - Update findings structure
+     4. `supabase/migrations/secure_rls_policies.sql` - Security policies
+     
+   See `supabase/README.md` and `supabase/MIGRATION_GUIDE.md` for detailed instructions.
 
 5. Run the development server:
 ```bash
@@ -162,10 +175,13 @@ Penethodix/
 │   ├── rule-evaluator.ts  # Rule evaluation logic
 │   └── types.ts           # TypeScript type definitions
 └── supabase/              # Database migrations
-    ├── migration-add-categories.sql
-    ├── fix-categories-rls.sql
-    ├── fix-rls.sql
-    └── seed-data.sql
+    ├── migrations/        # Versioned migrations
+    │   ├── create_findings_table.sql
+    │   ├── alter_findings_table.sql
+    │   └── secure_rls_policies.sql
+    ├── schema.sql         # Initial schema (for reference)
+    ├── seed-data.sql      # Seed data (optional)
+    └── README.md          # Supabase setup guide
 ```
 
 ## Key Features Explained

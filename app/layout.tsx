@@ -4,6 +4,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { NotificationContainer } from '@/components/ui/notification'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { EngagementProvider } from "@/contexts/engagement-context"
 import './globals.css'
 
 const _inter = Inter({ subsets: ["latin"] });
@@ -46,7 +47,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans antialiased`}>
         <ErrorBoundary>
-          {children}
+          <EngagementProvider>
+            {children}
+          </EngagementProvider>
         </ErrorBoundary>
         <NotificationContainer />
         <Analytics />

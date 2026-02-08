@@ -1,172 +1,81 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { useSupabaseTable } from "./use-supabase-table"
 import type { KnowledgeEntry } from "@/lib/types"
 import type { Database } from "@/lib/supabase/database.types"
 
 type KnowledgeRow = Database["public"]["Tables"]["knowledge_entries"]["Row"]
 
-function mapKnowledgeEntry(row: KnowledgeRow): KnowledgeEntry {
+function mapKnowledgeEntryFromRow(row: KnowledgeRow): KnowledgeEntry {
   return {
     id: row.id,
     title: row.title,
     domain: row.domain as KnowledgeEntry["domain"],
     phase: (row.phase as KnowledgeEntry["phase"]) || undefined,
     service: row.service || undefined,
-    tags: row.tags,
-    owaspTags: row.owasp_tags,
-    description: row.description,
-    steps: row.steps,
+    tags: row.tags || [],
+    owaspTags: row.owasp_tags || [],
+    description: row.description || "",
+    steps: row.steps || [],
     commands: (row.commands as unknown as KnowledgeEntry["commands"]) || [],
-    notes: row.notes,
+    notes: row.notes || "",
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
 }
 
+function mapKnowledgeEntryToRow(entry: Partial<KnowledgeEntry>): Partial<KnowledgeRow> {
+  const row: Partial<KnowledgeRow> = { ...entry as any }
+
+  if (entry.owaspTags !== undefined) {
+    row.owasp_tags = entry.owaspTags
+    delete (row as any).owaspTags
+  }
+  if (entry.createdAt !== undefined) {
+    delete (row as any).createdAt
+  }
+  if (entry.updatedAt !== undefined) {
+    delete (row as any).updatedAt
+  }
+  // Handle arrays that might be null from DB but are always array in FE type
+  if (entry.tags !== undefined) row.tags = entry.tags;
+  if (entry.steps !== undefined) row.steps = entry.steps;
+  if (entry.commands !== undefined) row.commands = entry.commands as unknown as Json;
+
+  return row
+}
+
+// Supabase generated types for JSONB columns can sometimes be 'Json' or 'unknown'
+type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
 export function useKnowledge() {
-  const [entries, setEntries] = useState<KnowledgeEntry[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-  const supabase = createClient()
+  const {
+    data: knowledgeRows,
+    loading,
+    error,
+    createItem: createKnowledgeRow,
+    updateItem: updateKnowledgeRow,
+    deleteItem: deleteEntry,
+  } = useSupabaseTable<KnowledgeRow>("knowledge_entries", "id", {
+    orderBy: { column: "created_at", ascending: false },
+  })
 
-  useEffect(() => {
-    // Fetch initial entries
-    async function fetchEntries() {
-      try {
-        setLoading(true)
-        const { data, error } = await supabase
-          .from("knowledge_entries")
-          .select("*")
-          .order("created_at", { ascending: false })
-
-        if (error) throw error
-        setEntries(data.map(mapKnowledgeEntry))
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error("Failed to fetch knowledge entries"))
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchEntries()
-
-    // Subscribe to real-time changes
-    const channel = supabase
-      .channel("knowledge-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "knowledge_entries",
-        },
-        async () => {
-          const { data } = await supabase
-            .from("knowledge_entries")
-            .select("*")
-            .order("created_at", { ascending: false })
-          if (data) {
-            setEntries(data.map(mapKnowledgeEntry))
-          }
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [supabase])
+  const entries: KnowledgeEntry[] = knowledgeRows.map(mapKnowledgeEntryFromRow)
 
   const createEntry = async (entry: Omit<KnowledgeEntry, "id" | "createdAt" | "updatedAt">) => {
-    const { data, error } = await supabase
-      .from("knowledge_entries")
-      .insert({
-        title: entry.title,
-        domain: entry.domain,
-        phase: entry.phase || null,
-        service: entry.service || null,
-        tags: entry.tags,
-        owasp_tags: entry.owaspTags,
-        description: entry.description,
-        steps: entry.steps,
-        commands: entry.commands as unknown,
-        notes: entry.notes,
-      })
-      .select()
-      .single()
-
-    if (error) throw error
-    const mapped = mapKnowledgeEntry(data)
-    // Optimistically update state (real-time will also update, but this makes it instant)
-    setEntries((prev) => [mapped, ...prev])
-    return mapped
+    const newKnowledgeRow = await createKnowledgeRow(mapKnowledgeEntryToRow(entry))
+    return mapKnowledgeEntryFromRow(newKnowledgeRow)
   }
 
   const updateEntry = async (id: string, updates: Partial<KnowledgeEntry>) => {
-    // Optimistically update state
-    setEntries((prev) =>
-      prev.map((entry) =>
-        entry.id === id ? { ...entry, ...updates } : entry
-      )
-    )
-
-    const updateData: any = {
-      updated_at: new Date().toISOString(),
-    }
-
-    if (updates.title !== undefined) updateData.title = updates.title
-    if (updates.domain !== undefined) updateData.domain = updates.domain
-    if (updates.phase !== undefined) updateData.phase = updates.phase || null
-    if (updates.service !== undefined) updateData.service = updates.service || null
-    if (updates.tags !== undefined) updateData.tags = updates.tags
-    if (updates.owaspTags !== undefined) updateData.owasp_tags = updates.owaspTags
-    if (updates.description !== undefined) updateData.description = updates.description
-    if (updates.steps !== undefined) updateData.steps = updates.steps
-    if (updates.commands !== undefined) updateData.commands = updates.commands as unknown
-    if (updates.notes !== undefined) updateData.notes = updates.notes
-
-    const { data, error } = await supabase
-      .from("knowledge_entries")
-      .update(updateData)
-      .eq("id", id)
-      .select()
-      .single()
-
-    if (error) {
-      // Revert optimistic update on error
-      setEntries((prev) =>
-        prev.map((entry) =>
-          entry.id === id ? { ...entry } : entry
-        )
-      )
-      throw error
-    }
-    const mapped = mapKnowledgeEntry(data)
-    // Update with server response
-    setEntries((prev) =>
-      prev.map((entry) => (entry.id === id ? mapped : entry))
-    )
-    return mapped
-  }
-
-  const deleteEntry = async (id: string) => {
-    // Optimistically remove from state
-    setEntries((prev) => prev.filter((entry) => entry.id !== id))
-    
-    const { error } = await supabase.from("knowledge_entries").delete().eq("id", id)
-    if (error) {
-      // Revert optimistic update on error by refetching
-      const { data } = await supabase
-        .from("knowledge_entries")
-        .select("*")
-        .order("created_at", { ascending: false })
-      if (data) {
-        setEntries(data.map(mapKnowledgeEntry))
-      }
-      throw error
-    }
+    const updatedKnowledgeRow = await updateKnowledgeRow(id, mapKnowledgeEntryToRow(updates))
+    return mapKnowledgeEntryFromRow(updatedKnowledgeRow)
   }
 
   return {
