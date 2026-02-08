@@ -5,14 +5,17 @@ import { Analytics } from '@vercel/analytics/next'
 import { NotificationContainer } from '@/components/ui/notification'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { EngagementProvider } from "@/contexts/engagement-context"
+import { ThemeProvider } from "@/components/theme-provider"
 import './globals.css'
 
 const _inter = Inter({ subsets: ["latin"] });
 const _jetbrainsMono = JetBrains_Mono({ subsets: ["latin"] });
 
 export const viewport: Viewport = {
-  themeColor: '#0F1115',
-  colorScheme: 'dark',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0F1115' },
+  ],
 }
 
 export const metadata: Metadata = {
@@ -44,15 +47,17 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased`}>
-        <ErrorBoundary>
-          <EngagementProvider>
-            {children}
-          </EngagementProvider>
-        </ErrorBoundary>
-        <NotificationContainer />
-        <Analytics />
+        <ThemeProvider>
+          <ErrorBoundary>
+            <EngagementProvider>
+              {children}
+            </EngagementProvider>
+          </ErrorBoundary>
+          <NotificationContainer />
+          <Analytics />
+        </ThemeProvider>
       </body>
     </html>
   )
