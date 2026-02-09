@@ -37,6 +37,7 @@ export default function PentestNotebook() {
   const {
     targets,
     createTarget,
+    updateTarget,
     addPort,
     deleteTarget,
   } = useTargets(activeEngagement?.id || null)
@@ -205,6 +206,7 @@ export default function PentestNotebook() {
               findings={findings}
               rules={rules}
               onCreateTarget={createTarget}
+              onUpdateTarget={updateTarget}
               onAddPort={addPort}
               onDeleteTarget={deleteTarget}
               onCreateFinding={createFinding}
