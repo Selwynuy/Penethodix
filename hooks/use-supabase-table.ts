@@ -23,6 +23,15 @@ export function useSupabaseTable<T extends { id: string }>(
   const [error, setError] = useState<Error | null>(null)
 
   const fetchData = useCallback(async () => {
+    // Skip query if filterColumn is specified but filterValue is null/undefined
+    // This prevents unnecessary queries when no engagement is selected
+    if (options?.filterColumn && (options?.filterValue === null || options?.filterValue === undefined)) {
+      setData([])
+      setLoading(false)
+      setError(null)
+      return
+    }
+
     setLoading(true)
     setError(null)
     let query = supabase.from(tableName).select("*")
@@ -48,6 +57,7 @@ export function useSupabaseTable<T extends { id: string }>(
       })
       setError(fetchError instanceof Error ? fetchError : new Error(errorMessage))
       setData([])
+      // Only show error notification for actual errors, not when skipping queries
       notification.error(`Failed to load ${tableName}`, errorMessage)
     } else {
       setData(fetchedData || [])
@@ -58,6 +68,11 @@ export function useSupabaseTable<T extends { id: string }>(
 
   useEffect(() => {
     fetchData()
+
+    // Skip real-time subscription if filterColumn is specified but filterValue is null/undefined
+    if (options?.filterColumn && (options?.filterValue === null || options?.filterValue === undefined)) {
+      return
+    }
 
     // Subscribe to real-time changes
     const channelName = options?.filterColumn && options?.filterValue
