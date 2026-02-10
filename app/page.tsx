@@ -127,17 +127,40 @@ export default function PentestNotebook() {
     }
   }
   
+  const [selectedTarget, setSelectedTarget] = useState<Target | null>(null)
+
   const handleNewFinding = useCallback(async () => {
-    if (!activeEngagement) return;
+    if (!activeEngagement) {
+      notification.error("No Engagement Selected", "Please select an engagement first.")
+      return
+    }
     
-    // Note: This keyboard shortcut handler is kept for compatibility
-    // but the actual finding creation should be done through FindingsEditor
-    // which requires a selected target
-    notification.info(
-      "Select Target First",
-      "Please select a target in the Targets panel, then click 'New Finding' to add a finding for that target."
-    )
-  }, [activeEngagement]);
+    if (!selectedTarget) {
+      notification.error(
+        "No Target Selected",
+        "Please select a target first, then press Ctrl+N to add a finding for that target."
+      )
+      return
+    }
+
+    try {
+      const newFinding = await createFinding({
+        engagement_id: activeEngagement.id,
+        title: "New Finding",
+        severity: "medium",
+        status: "open",
+        description: "",
+        target_id: selectedTarget.id,
+      })
+      notification.success(`New finding created for ${selectedTarget.ip}`)
+    } catch (error) {
+      console.error("Failed to create finding:", error)
+      notification.error(
+        "Failed to create finding",
+        error instanceof Error ? error.message : "An unknown error occurred"
+      )
+    }
+  }, [activeEngagement, selectedTarget, createFinding])
 
 
   // Loading state
@@ -205,6 +228,8 @@ export default function PentestNotebook() {
               targets={targets}
               findings={findings}
               rules={rules}
+              selectedTarget={selectedTarget}
+              onTargetSelect={setSelectedTarget}
               onCreateTarget={createTarget}
               onUpdateTarget={updateTarget}
               onAddPort={addPort}
