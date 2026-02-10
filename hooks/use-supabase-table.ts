@@ -128,11 +128,18 @@ export function useSupabaseTable<T extends { id: string }>(
             }
           }
         )
-        .subscribe((status) => {
+        .subscribe((status, err) => {
           if (status === 'SUBSCRIBED') {
             // Subscription successful
           } else if (status === 'CHANNEL_ERROR') {
-            console.error(`Failed to subscribe to ${tableName} changes`)
+            // Only log if there's an actual error (not just real-time not enabled)
+            if (err) {
+              console.error(`Failed to subscribe to ${tableName} changes:`, err)
+            } else {
+              // Real-time replication may not be enabled for this table in Supabase
+              // This is expected if real-time is disabled - data will still sync on manual refresh
+              console.debug(`Real-time subscription unavailable for ${tableName} (real-time may not be enabled)`)
+            }
           }
         })
 
