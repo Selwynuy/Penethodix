@@ -22,12 +22,12 @@ export interface Target {
 }
 
 // Knowledge Base Types
-export type KnowledgeDomain = string // Now a string to support user-defined categories
+export type KnowledgeCategory = string // Now a string to support user-defined categories
 
 export interface KnowledgeEntry {
   id: string
   title: string
-  domain: KnowledgeDomain
+  domain: KnowledgeCategory
   phase?: Engagement["phase"]
   service?: string
   tags: string[]
@@ -39,6 +39,9 @@ export interface KnowledgeEntry {
   createdAt: string
   updatedAt: string
 }
+
+// Importable format (excludes sensitive fields: id, createdAt, updatedAt)
+export type ImportableKnowledgeEntry = Omit<KnowledgeEntry, "id" | "createdAt" | "updatedAt">
 
 // Rules Types
 export type RuleConditionType = "service_detected" | "port_open" | "version_match" | "phase_active" | "tag_present"
