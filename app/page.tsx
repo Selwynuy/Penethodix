@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { AppHeader } from "@/components/pentest/app-header"
 import { Sidebar, type SidebarView } from "@/components/pentest/sidebar"
 import { KeyboardShortcuts } from "@/components/pentest/keyboard-shortcuts"
-import { KnowledgeBase } from "@/components/pentest/knowledge-base"
+import { KnowledgeBase, type KnowledgeBaseHandle } from "@/components/pentest/knowledge-base"
+import type { TargetPanelHandle } from "@/components/pentest/target-panel"
 import { RulesEditor } from "@/components/pentest/rules-editor"
 import { EngagementView } from "@/components/pentest/engagement-view"
 import { useEngagementContext } from "@/contexts/engagement-context" // New context
@@ -21,6 +22,8 @@ export default function PentestNotebook() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [activeView, setActiveView] = useState<SidebarView>("engagements")
   const [syncStatus, setSyncStatus] = useState<"synced" | "syncing" | "offline">("synced")
+  const knowledgeBaseRef = useRef<KnowledgeBaseHandle>(null)
+  const targetPanelRef = useRef<TargetPanelHandle>(null)
 
   // Use the new Engagement Context
   const {
@@ -58,6 +61,7 @@ export default function PentestNotebook() {
 
   const {
     rules,
+    createRule,
     updateRule,
     duplicateRule,
     deleteRule,
@@ -237,12 +241,14 @@ export default function PentestNotebook() {
               onCreateFinding={createFinding}
               onUpdateFinding={updateFinding}
               onDeleteFinding={deleteFinding}
+              targetPanelRef={targetPanelRef}
             />
           </main>
         )}
 
         {activeView === "knowledge" && (
           <KnowledgeBase
+            ref={knowledgeBaseRef}
             entries={knowledgeEntries}
             onAddEntry={async (entry) => {
               try {
@@ -275,6 +281,20 @@ export default function PentestNotebook() {
             rules={rules}
             onToggleRule={handleToggleRule}
             onUpdateRule={handleUpdateRule}
+            onCreateRule={async (rule) => {
+              try {
+                const createdRule = await createRule(rule)
+                notification.success("Rule created")
+                return createdRule
+              } catch (error) {
+                console.error("Failed to create rule:", error)
+                notification.error(
+                  "Failed to create rule",
+                  error instanceof Error ? error.message : "An unknown error occurred"
+                )
+                throw error
+              }
+            }}
             onDuplicateRule={async (id) => {
               try {
                 await duplicateRule(id)
@@ -306,6 +326,9 @@ export default function PentestNotebook() {
 
       <KeyboardShortcuts
         onNewFinding={handleNewFinding}
+        knowledgeBaseRef={knowledgeBaseRef}
+        targetPanelRef={targetPanelRef}
+        activeView={activeView}
       />
     </div>
   )
