@@ -60,7 +60,9 @@ export function useSupabaseTable<T extends { id: string }>(
       // Only show error notification for actual errors, not when skipping queries
       notification.error(`Failed to load ${tableName}`, errorMessage)
     } else {
-      setData(fetchedData || [])
+      // Filter out any temporary items that might have been left behind
+      const validData = (fetchedData || []).filter((item: T) => !item.id.startsWith('temp-'))
+      setData(validData)
     }
     setLoading(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,7 +72,12 @@ export function useSupabaseTable<T extends { id: string }>(
     fetchData()
 
     // Skip real-time subscription if filterColumn is specified but filterValue is null/undefined
-    if (options?.filterColumn && (options?.filterValue === null || options?.filterValue === undefined)) {
+    // Also skip if filterValue is a temporary ID (starts with "temp-")
+    if (options?.filterColumn && (
+      options?.filterValue === null || 
+      options?.filterValue === undefined ||
+      (typeof options.filterValue === 'string' && options.filterValue.startsWith('temp-'))
+    )) {
       return
     }
 
@@ -210,6 +217,20 @@ export function useSupabaseTable<T extends { id: string }>(
     async (id: string, updates: Partial<T>): Promise<T> => {
       setError(null)
       
+      // Skip database operation if ID is a temporary ID (starts with "temp-")
+      if (id.startsWith("temp-")) {
+        // Just update locally for temp items
+        setData((prev) =>
+          prev.map((item) => (item.id === id ? { ...item, ...updates } as T : item))
+        )
+        // Return the updated temp item
+        const updatedItem = data.find((item) => item.id === id)
+        if (updatedItem) {
+          return { ...updatedItem, ...updates } as T
+        }
+        throw new Error("Temporary item not found")
+      }
+      
       // Optimistic update
       setData((prev) =>
         prev.map((item) => (item.id === id ? { ...item, ...updates } as T : item))
@@ -238,12 +259,19 @@ export function useSupabaseTable<T extends { id: string }>(
       
       return updatedItem
     },
-    [tableName, primaryKey, supabase, fetchData]
+    [tableName, primaryKey, supabase, fetchData, data]
   )
 
   const deleteItem = useCallback(
     async (id: string): Promise<void> => {
       setError(null)
+      
+      // Skip database operation if ID is a temporary ID (starts with "temp-")
+      if (id.startsWith("temp-")) {
+        // Just remove locally for temp items
+        setData((prev) => prev.filter((item) => item.id !== id))
+        return
+      }
       
       // Optimistic update - remove item immediately
       const deletedItem = data.find((item) => item.id === id)

@@ -8,6 +8,7 @@ import { KnowledgeBase, type KnowledgeBaseHandle } from "@/components/pentest/kn
 import type { TargetPanelHandle } from "@/components/pentest/target-panel"
 import { RulesEditor } from "@/components/pentest/rules-editor"
 import { EngagementView } from "@/components/pentest/engagement-view"
+import { Homepage } from "@/components/pentest/homepage"
 import { useEngagementContext } from "@/contexts/engagement-context" // New context
 import { useTargets } from "@/hooks/use-targets"
 import { useKnowledge } from "@/hooks/use-knowledge"
@@ -19,9 +20,12 @@ import { Button } from "@/components/ui/button"
 import type { Engagement, Target, Port, KnowledgeEntry, Rule, Finding } from "@/lib/types"
 
 export default function PentestNotebook() {
+  // All hooks must be called at the top, before any conditional returns
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [activeView, setActiveView] = useState<SidebarView>("engagements")
   const [syncStatus, setSyncStatus] = useState<"synced" | "syncing" | "offline">("synced")
+  const [selectedTarget, setSelectedTarget] = useState<Target | null>(null)
+  const [showHomepage, setShowHomepage] = useState(false)
   const knowledgeBaseRef = useRef<KnowledgeBaseHandle>(null)
   const targetPanelRef = useRef<TargetPanelHandle>(null)
 
@@ -66,6 +70,26 @@ export default function PentestNotebook() {
     duplicateRule,
     deleteRule,
   } = useRules()
+
+  // Show homepage if no engagements exist
+  useEffect(() => {
+    if (engagements.length === 0) {
+      setShowHomepage(true)
+    }
+  }, [engagements.length])
+
+  // Hide homepage when an engagement is selected (user explicitly selected it)
+  useEffect(() => {
+    if (activeEngagement) {
+      // Only hide if we're not explicitly showing homepage
+      // This prevents auto-selection from hiding the homepage when user clicks logo
+      // But if user selects an engagement from sidebar, hide the homepage
+      if (!showHomepage) {
+        // User selected an engagement, so hide homepage
+        setShowHomepage(false)
+      }
+    }
+  }, [activeEngagement, showHomepage])
 
   // Sync status detection
   useEffect(() => {
@@ -130,8 +154,6 @@ export default function PentestNotebook() {
       console.error("Failed to update knowledge entry:", error)
     }
   }
-  
-  const [selectedTarget, setSelectedTarget] = useState<Target | null>(null)
 
   const handleNewFinding = useCallback(async () => {
     if (!activeEngagement) {
@@ -166,8 +188,27 @@ export default function PentestNotebook() {
     }
   }, [activeEngagement, selectedTarget, createFinding])
 
+  const handleCreateEngagement = async () => {
+    try {
+      const newEngagement = await createEngagement({
+        name: "New Engagement",
+        phase: "reconnaissance",
+        status: "active",
+      })
+      setActiveEngagement(newEngagement)
+      setShowHomepage(false) // Hide homepage when engagement is created
+      notification.success("Engagement created")
+    } catch (error) {
+      console.error("Failed to create engagement:", error)
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
+      notification.error(
+        "Failed to create engagement",
+        errorMessage
+      )
+    }
+  }
 
-  // Loading state
+  // Loading state - now after all hooks
   if (engagementsLoading && engagements.length === 0) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -176,39 +217,26 @@ export default function PentestNotebook() {
     )
   }
 
-  if (!activeEngagement && engagements.length === 0) {
+  const handleNavigateToEngagements = () => {
+    // If there are engagements, select the first one or the active one
+    if (engagements.length > 0) {
+      const engagementToSelect = activeEngagement || engagements[0]
+      setActiveEngagement(engagementToSelect)
+      setShowHomepage(false)
+    } else {
+      // No engagements, just hide homepage to show empty state
+      setShowHomepage(false)
+    }
+  }
+
+  // Show homepage if explicitly set, or if no engagements exist
+  if (showHomepage || (!activeEngagement && engagements.length === 0)) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background relative z-10">
-        <div className="text-center space-y-4">
-          <p className="mb-4 text-muted-foreground">No engagements found</p>
-          <Button
-            onClick={async (e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              try {
-                const newEngagement = await createEngagement({
-                  name: "New Engagement",
-                  phase: "reconnaissance",
-                  status: "active",
-                })
-                setActiveEngagement(newEngagement)
-                notification.success("Engagement created")
-              } catch (error) {
-                console.error("Failed to create engagement:", error)
-                const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-                notification.error(
-                  "Failed to create engagement",
-                  errorMessage
-                )
-              }
-            }}
-            type="button"
-            className="relative z-20"
-          >
-            Create Engagement
-          </Button>
-        </div>
-      </div>
+      <Homepage 
+        onCreateEngagement={handleCreateEngagement} 
+        syncStatus={syncStatus}
+        onNavigateToEngagements={handleNavigateToEngagements}
+      />
     )
   }
 
@@ -216,6 +244,7 @@ export default function PentestNotebook() {
     <div className="flex h-screen flex-col bg-background text-foreground">
       <AppHeader
         syncStatus={syncStatus}
+        onLogoClick={() => setShowHomepage(true)}
       />
       
       <div className="flex flex-1 overflow-hidden">

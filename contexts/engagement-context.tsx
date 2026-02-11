@@ -1,13 +1,13 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, useMemo, ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode } from "react"
 import type { Engagement } from "@/lib/types"
 import { useEngagements } from "@/hooks/use-engagements"
 
 interface EngagementContextType {
   engagements: Engagement[]
   activeEngagement: Engagement | null
-  setActiveEngagement: (engagement: Engagement | null) => void
+  setActiveEngagement: (engagement: Engagement | null, skipAutoSelect?: boolean) => void
   createEngagement: (engagement: Omit<Engagement, "id">) => Promise<Engagement>
   updateEngagement: (id: string, updates: Partial<Engagement>) => Promise<Engagement>
   deleteEngagement: (id: string) => Promise<void>
@@ -25,19 +25,33 @@ export function EngagementProvider({ children }: { children: ReactNode }) {
     deleteEngagement,
   } = useEngagements()
   
-  const [activeEngagement, setActiveEngagement] = useState<Engagement | null>(null)
+  const [activeEngagement, setActiveEngagementState] = useState<Engagement | null>(null)
+  const skipAutoSelectRef = useRef(false)
 
-  // Set first engagement as active when engagements load
+  // Wrapper to handle skipAutoSelect flag
+  const setActiveEngagement = (engagement: Engagement | null, skipAutoSelectFlag: boolean = false) => {
+    skipAutoSelectRef.current = skipAutoSelectFlag
+    setActiveEngagementState(engagement)
+    // Reset the flag after a brief moment (only if we're setting to null)
+    if (engagement === null && skipAutoSelectFlag) {
+      // Keep it true for now, will reset when engagement is explicitly selected
+    } else if (engagement !== null) {
+      // Reset when an engagement is explicitly selected
+      skipAutoSelectRef.current = false
+    }
+  }
+
+  // Set first engagement as active when engagements load (unless skipAutoSelect is true)
   useEffect(() => {
-    if (engagements.length > 0 && !activeEngagement) {
-      setActiveEngagement(engagements[0])
+    if (engagements.length > 0 && !activeEngagement && !skipAutoSelectRef.current) {
+      setActiveEngagementState(engagements[0])
     }
   }, [engagements, activeEngagement])
 
   // Clear active engagement if it's been deleted
   useEffect(() => {
     if (activeEngagement && !engagements.find((e) => e.id === activeEngagement.id)) {
-      setActiveEngagement(engagements.length > 0 ? engagements[0] : null)
+      setActiveEngagementState(engagements.length > 0 ? engagements[0] : null)
     }
   }, [engagements, activeEngagement])
 
@@ -46,7 +60,7 @@ export function EngagementProvider({ children }: { children: ReactNode }) {
     if (activeEngagement) {
       const updatedEngagement = engagements.find((e) => e.id === activeEngagement.id)
       if (updatedEngagement) {
-        setActiveEngagement(updatedEngagement)
+        setActiveEngagementState(updatedEngagement)
       }
     }
   }, [engagements, activeEngagement])
