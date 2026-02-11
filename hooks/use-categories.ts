@@ -10,8 +10,13 @@ export interface Category {
   id: string
   name: string
   color: string
+  parentId?: string | null
   createdAt: string
   updatedAt: string
+}
+
+export interface CategoryTreeNode extends Category {
+  children: CategoryTreeNode[]
 }
 
 function mapCategory(row: CategoryRow): Category {
@@ -19,9 +24,44 @@ function mapCategory(row: CategoryRow): Category {
     id: row.id,
     name: row.name,
     color: row.color,
+    parentId: row.parent_id || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
+}
+
+// Build tree structure from flat categories
+export function buildCategoryTree(categories: Category[]): CategoryTreeNode[] {
+  const categoryMap = new Map<string, CategoryTreeNode>()
+  const rootCategories: CategoryTreeNode[] = []
+
+  // First pass: create all nodes
+  categories.forEach((cat) => {
+    categoryMap.set(cat.id, { ...cat, children: [] })
+  })
+
+  // Second pass: build tree
+  categories.forEach((cat) => {
+    const node = categoryMap.get(cat.id)!
+    if (cat.parentId && categoryMap.has(cat.parentId)) {
+      const parent = categoryMap.get(cat.parentId)!
+      parent.children.push(node)
+    } else {
+      rootCategories.push(node)
+    }
+  })
+
+  // Sort each level alphabetically
+  const sortTree = (nodes: CategoryTreeNode[]): CategoryTreeNode[] => {
+    return nodes
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((node) => ({
+        ...node,
+        children: sortTree(node.children),
+      }))
+  }
+
+  return sortTree(rootCategories)
 }
 
 export function useCategories() {
@@ -104,6 +144,7 @@ export function useCategories() {
       .insert({
         name: category.name,
         color: category.color,
+        parent_id: category.parentId || null,
         user_id: user?.id || null,
       })
       .select()
@@ -137,6 +178,7 @@ export function useCategories() {
 
     if (updates.name !== undefined) updateData.name = updates.name
     if (updates.color !== undefined) updateData.color = updates.color
+    if (updates.parentId !== undefined) updateData.parent_id = updates.parentId
 
     const { data, error } = await supabase
       .from("categories")
