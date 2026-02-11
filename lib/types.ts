@@ -1,7 +1,7 @@
 export interface Engagement {
   id: string
   name: string
-  phase: "reconnaissance" | "enumeration" | "exploitation" | "post-exploitation" | "reporting"
+  phase: string // User-defined phase name
   status: "active" | "completed" | "paused"
 }
 
@@ -28,7 +28,7 @@ export interface KnowledgeEntry {
   id: string
   title: string
   domain: KnowledgeCategory
-  phase?: Engagement["phase"]
+  phase?: string // User-defined phase name
   service?: string
   tags: string[]
   owaspTags: string[]
@@ -65,7 +65,7 @@ export interface Rule {
   id: string
   name: string
   description: string
-  phase: Engagement["phase"]
+  phase: string // User-defined phase name
   enabled: boolean
   tags: string[]
   conditions: RuleCondition[]

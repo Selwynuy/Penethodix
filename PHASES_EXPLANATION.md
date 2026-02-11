@@ -73,12 +73,57 @@ The phase badge in the header shows your current stage:
 4. **Remediation Priority**: Phase-based organization helps prioritize fixes
 5. **Compliance**: Some frameworks (OWASP, PTES) require phase-based reporting
 
+## Categories vs Phases: Understanding the Difference
+
+It's important to understand the distinction between **Categories** and **Phases** in the Knowledge Base:
+
+### Categories (Domain)
+- **What**: The topic/domain of knowledge (e.g., "Web Apps", "Network", "Cloud", "Mobile")
+- **Purpose**: Organize entries by subject area or technology type
+- **Usage**: **Required** - Every knowledge entry must have a category
+- **Scope**: Knowledge base organization
+- **Example**: "SSH Enumeration" → Category: "Network Security"
+
+### Phases
+- **What**: The stage in your methodology/engagement (e.g., "Reconnaissance", "Enumeration", "Exploitation")
+- **Purpose**: Track when/where in your workflow a technique applies
+- **Usage**: **Optional** - Entries can have a phase or not
+- **Scope**: Engagement workflow and methodology
+- **Example**: "SSH Enumeration" → Phase: "Enumeration"
+
+### Why They Sometimes Overlap
+
+You might notice that some users create categories with phase names (e.g., "Reconnaissance" as a category). This is valid, but understanding the distinction helps:
+
+- **Categories** answer: *"What domain/topic is this?"*
+- **Phases** answer: *"When in my methodology does this apply?"*
+
+A single technique can belong to a category (what) AND have a phase (when). For example:
+- Entry: "SQL Injection Testing"
+- Category: "Web Applications" (what)
+- Phase: "Enumeration" (when)
+
+### Best Practice
+
+**Recommended approach:**
+- **Categories** = What (domain/topic) - e.g., "Web Apps", "Network", "Cloud", "Mobile", "API Security"
+- **Phases** = When (methodology stage) - e.g., "Reconnaissance", "Enumeration", "Exploitation", "Post-Exploitation", "Reporting"
+
+This separation allows you to:
+- Filter by topic (category) to find all web app techniques
+- Filter by phase to find all enumeration techniques
+- Combine both filters for maximum precision
+
+**Note**: If you create a category with the same name as a phase, the system will automatically detect this and set the phase for you to avoid redundancy.
+
 ## Best Practice
 
 - **Start in Reconnaissance** when beginning a new engagement
 - **Progress through phases** as you discover more
 - **Switch to Reporting** when you're ready to document everything
-- **Use Ctrl+P** to quickly cycle through phases
+- **Use Alt+P** to quickly cycle through engagement phases (or open phase dialog in Knowledge Base)
+- **Use Alt+C** to add categories in Knowledge Base
+- **Use Alt+E** to add entries in Knowledge Base
 
 ## Optional vs Required
 

@@ -43,12 +43,14 @@ A state-aware penetration testing notebook that helps security professionals org
 
 ### 📚 Knowledge Base
 - Centralized repository of techniques and tools
-- Categorized by domain and phase
+- **Categories** (required): Organize by domain/topic (e.g., "Web Apps", "Network", "Cloud")
+- **Phases** (optional): Tag by methodology stage (e.g., "Reconnaissance", "Enumeration")
 - Search and filter functionality
 - OWASP tag support
 - Step-by-step procedures
 - Command templates
 - Export/Import JSON functionality
+- User-defined categories and phases for custom methodologies
 
 ### ⚙️ Rules Engine
 - Create custom rules for automated suggestions
