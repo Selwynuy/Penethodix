@@ -9,10 +9,10 @@ import type { TargetPanelHandle } from "@/components/pentest/target-panel"
 import { RulesEditor } from "@/components/pentest/rules-editor"
 import { EngagementView } from "@/components/pentest/engagement-view"
 import { Homepage } from "@/components/pentest/homepage"
-import { useEngagementContext } from "@/contexts/engagement-context" // New context
+import { useEngagementContext } from "@/contexts/engagement-context"
+import { useKnowledgeContext } from "@/contexts/knowledge-context"
+import { useRulesContext } from "@/contexts/rules-context"
 import { useTargets } from "@/hooks/use-targets"
-import { useKnowledge } from "@/hooks/use-knowledge"
-import { useRules } from "@/hooks/use-rules"
 import { useFindings } from "@/hooks/use-findings"
 import { createClient } from "@/lib/supabase/client"
 import { notification } from "@/components/ui/notification"
@@ -61,7 +61,7 @@ export default function PentestNotebook() {
     createEntry: createKnowledgeEntry,
     updateEntry: updateKnowledgeEntry,
     deleteEntry: deleteKnowledgeEntry,
-  } = useKnowledge()
+  } = useKnowledgeContext()
 
   const {
     rules,
@@ -69,7 +69,7 @@ export default function PentestNotebook() {
     updateRule,
     duplicateRule,
     deleteRule,
-  } = useRules()
+  } = useRulesContext()
 
   // Show homepage if no engagements exist
   useEffect(() => {

@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { useSupabaseTable } from "./use-supabase-table"
 import type { Rule } from "@/lib/types"
 import type { Database } from "@/lib/supabase/database.types"
@@ -47,6 +48,10 @@ type Json =
   | Json[]
 
 export function useRules() {
+  const options = useMemo(() => ({
+    orderBy: { column: "created_at", ascending: false },
+  }), [])
+
   const {
     data: ruleRows,
     loading,
@@ -54,9 +59,7 @@ export function useRules() {
     createItem: createRuleRow,
     updateItem: updateRuleRow,
     deleteItem: deleteRule,
-  } = useSupabaseTable<RuleRow>("rules", "id", {
-    orderBy: { column: "created_at", ascending: false },
-  })
+  } = useSupabaseTable<RuleRow>("rules", "id", options)
 
   const rules: Rule[] = ruleRows.map(mapRuleFromRow)
 

@@ -1,9 +1,14 @@
 "use client"
 
+import { useMemo } from "react"
 import { useSupabaseTable } from "./use-supabase-table"
 import type { Engagement } from "@/lib/types"
 
 export function useEngagements() {
+  const options = useMemo(() => ({
+    orderBy: { column: "created_at", ascending: false },
+  }), [])
+
   const {
     data: engagements,
     loading,
@@ -12,9 +17,7 @@ export function useEngagements() {
     updateItem: updateEngagement,
     deleteItem: deleteEngagement,
     refetch: refetchEngagements,
-  } = useSupabaseTable<Engagement>("engagements", "id", {
-    orderBy: { column: "created_at", ascending: false },
-  })
+  } = useSupabaseTable<Engagement>("engagements", "id", options)
 
   return {
     engagements,

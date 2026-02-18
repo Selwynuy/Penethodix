@@ -6,6 +6,10 @@ import { NotificationContainer } from '@/components/ui/notification'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { AuthProvider } from "@/contexts/auth-context"
 import { EngagementProvider } from "@/contexts/engagement-context"
+import { KnowledgeProvider } from "@/contexts/knowledge-context"
+import { RulesProvider } from "@/contexts/rules-context"
+import { CategoriesProvider } from "@/contexts/categories-context"
+import { PhasesProvider } from "@/contexts/phases-context"
 import { ThemeProvider } from "@/components/theme-provider"
 import './globals.css'
 
@@ -54,7 +58,15 @@ export default function RootLayout({
           <ErrorBoundary>
             <AuthProvider>
               <EngagementProvider>
-                {children}
+                <CategoriesProvider>
+                  <PhasesProvider>
+                    <KnowledgeProvider>
+                      <RulesProvider>
+                        {children}
+                      </RulesProvider>
+                    </KnowledgeProvider>
+                  </PhasesProvider>
+                </CategoriesProvider>
               </EngagementProvider>
             </AuthProvider>
           </ErrorBoundary>

@@ -1,9 +1,16 @@
 "use client"
 
+import { useMemo } from "react"
 import { useSupabaseTable } from "./use-supabase-table"
 import type { Finding } from "@/lib/types"
 
 export function useFindings(engagementId: string | null) {
+  const options = useMemo(() => ({
+    filterColumn: "engagement_id",
+    filterValue: engagementId,
+    orderBy: { column: "created_at", ascending: true },
+  }), [engagementId])
+
   const {
     data: findings,
     loading,
@@ -12,11 +19,7 @@ export function useFindings(engagementId: string | null) {
     updateItem: updateFinding,
     deleteItem: deleteFinding,
     refetch: refetchFindings,
-  } = useSupabaseTable<Finding>("findings", "id", {
-    filterColumn: "engagement_id",
-    filterValue: engagementId,
-    orderBy: { column: "created_at", ascending: true },
-  })
+  } = useSupabaseTable<Finding>("findings", "id", options)
 
   return {
     findings,

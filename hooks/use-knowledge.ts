@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { useSupabaseTable } from "./use-supabase-table"
 import type { KnowledgeEntry } from "@/lib/types"
 import type { Database } from "@/lib/supabase/database.types"
@@ -55,6 +56,10 @@ type Json =
   | Json[]
 
 export function useKnowledge() {
+  const options = useMemo(() => ({
+    orderBy: { column: "created_at", ascending: false },
+  }), [])
+
   const {
     data: knowledgeRows,
     loading,
@@ -62,9 +67,7 @@ export function useKnowledge() {
     createItem: createKnowledgeRow,
     updateItem: updateKnowledgeRow,
     deleteItem: deleteEntry,
-  } = useSupabaseTable<KnowledgeRow>("knowledge_entries", "id", {
-    orderBy: { column: "created_at", ascending: false },
-  })
+  } = useSupabaseTable<KnowledgeRow>("knowledge_entries", "id", options)
 
   const entries: KnowledgeEntry[] = knowledgeRows.map(mapKnowledgeEntryFromRow)
 

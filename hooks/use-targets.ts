@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { useSupabaseTable } from "./use-supabase-table"
 import type { Target, Port } from "@/lib/types"
 import type { Database } from "@/lib/supabase/database.types"
@@ -47,6 +48,12 @@ type Json =
   | Json[]
 
 export function useTargets(engagementId: string | null) {
+  const options = useMemo(() => ({
+    filterColumn: "engagement_id",
+    filterValue: engagementId,
+    orderBy: { column: "created_at", ascending: true },
+  }), [engagementId])
+
   const {
     data: targetRows,
     loading,
@@ -54,11 +61,7 @@ export function useTargets(engagementId: string | null) {
     createItem: createTargetRow,
     updateItem: updateTargetRow,
     deleteItem: deleteTarget,
-  } = useSupabaseTable<TargetRow>("targets", "id", {
-    filterColumn: "engagement_id",
-    filterValue: engagementId,
-    orderBy: { column: "created_at", ascending: true },
-  })
+  } = useSupabaseTable<TargetRow>("targets", "id", options)
 
   const targets: Target[] = targetRows.map(mapTargetFromRow)
 
