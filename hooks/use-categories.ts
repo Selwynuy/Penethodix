@@ -12,6 +12,16 @@ export interface Category {
   name: string
   color: string
   parentId?: string | null
+  // Content fields (CherryTree-style - categories can have content)
+  description?: string
+  steps?: string[]
+  commands?: { command: string; description: string }[]
+  notes?: string
+  tags?: string[]
+  owaspTags?: string[]
+  phase?: string
+  service?: string
+  // Metadata
   createdAt: string
   updatedAt: string
 }
@@ -26,6 +36,16 @@ function mapCategory(row: CategoryRow): Category {
     name: row.name,
     color: row.color,
     parentId: row.parent_id || null,
+    // Content fields
+    description: row.description || "",
+    steps: row.steps || [],
+    commands: (row.commands as unknown as Category["commands"]) || [],
+    notes: row.notes || "",
+    tags: row.tags || [],
+    owaspTags: row.owasp_tags || [],
+    phase: row.phase || undefined,
+    service: row.service || undefined,
+    // Metadata
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -141,6 +161,14 @@ export function useCategories() {
         name: category.name,
         color: category.color,
         parent_id: category.parentId || null,
+        description: category.description || "",
+        steps: category.steps || [],
+        commands: category.commands || [],
+        notes: category.notes || "",
+        tags: category.tags || [],
+        owasp_tags: category.owaspTags || [],
+        phase: category.phase || null,
+        service: category.service || null,
         user_id: user?.id || null,
       })
       .select()
@@ -175,6 +203,14 @@ export function useCategories() {
     if (updates.name !== undefined) updateData.name = updates.name
     if (updates.color !== undefined) updateData.color = updates.color
     if (updates.parentId !== undefined) updateData.parent_id = updates.parentId
+    if (updates.description !== undefined) updateData.description = updates.description
+    if (updates.steps !== undefined) updateData.steps = updates.steps
+    if (updates.commands !== undefined) updateData.commands = updates.commands
+    if (updates.notes !== undefined) updateData.notes = updates.notes
+    if (updates.tags !== undefined) updateData.tags = updates.tags
+    if (updates.owaspTags !== undefined) updateData.owasp_tags = updates.owaspTags
+    if (updates.phase !== undefined) updateData.phase = updates.phase
+    if (updates.service !== undefined) updateData.service = updates.service
 
     const { data, error } = await supabase
       .from("categories")
