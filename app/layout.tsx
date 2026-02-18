@@ -4,6 +4,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { NotificationContainer } from '@/components/ui/notification'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { AuthProvider } from "@/contexts/auth-context"
 import { EngagementProvider } from "@/contexts/engagement-context"
 import { ThemeProvider } from "@/components/theme-provider"
 import './globals.css'
@@ -51,9 +52,11 @@ export default function RootLayout({
       <body className={`font-sans antialiased`}>
         <ThemeProvider>
           <ErrorBoundary>
-            <EngagementProvider>
-              {children}
-            </EngagementProvider>
+            <AuthProvider>
+              <EngagementProvider>
+                {children}
+              </EngagementProvider>
+            </AuthProvider>
           </ErrorBoundary>
           <NotificationContainer />
           <Analytics />

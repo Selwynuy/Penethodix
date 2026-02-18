@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { useAuth } from "@/contexts/auth-context"
 import type { Database } from "@/lib/supabase/database.types"
 
 type PhaseRow = Database["public"]["Tables"]["phases"]["Row"]
@@ -30,6 +31,7 @@ export function usePhases() {
   const [phases, setPhases] = useState<Phase[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const { user } = useAuth()
   const supabase = createClient()
 
   useEffect(() => {
@@ -37,8 +39,6 @@ export function usePhases() {
     async function fetchPhases() {
       try {
         setLoading(true)
-        // Get current user to filter phases
-        const { data: { user } } = await supabase.auth.getUser()
         
         let query = supabase
           .from("phases")
@@ -74,7 +74,6 @@ export function usePhases() {
           table: "phases",
         },
         async () => {
-          const { data: { user } } = await supabase.auth.getUser()
           let query = supabase
             .from("phases")
             .select("*")
@@ -95,12 +94,9 @@ export function usePhases() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [supabase])
+  }, [supabase, user])
 
   const createPhase = async (phase: Omit<Phase, "id" | "createdAt" | "updatedAt">) => {
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser()
-    
     // Get max order to append at end
     const { data: existingPhases } = await supabase
       .from("phases")
@@ -161,7 +157,6 @@ export function usePhases() {
 
     if (error) {
       // Revert optimistic update on error
-      const { data: { user } } = await supabase.auth.getUser()
       let query = supabase
         .from("phases")
         .select("*")
@@ -192,7 +187,6 @@ export function usePhases() {
     const { error } = await supabase.from("phases").delete().eq("id", id)
     if (error) {
       // Revert optimistic update on error by refetching
-      const { data: { user } } = await supabase.auth.getUser()
       let query = supabase
         .from("phases")
         .select("*")

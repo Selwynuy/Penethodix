@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { useAuth } from "@/contexts/auth-context"
 import type { Database } from "@/lib/supabase/database.types"
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"]
@@ -68,6 +69,7 @@ export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const { user } = useAuth()
   const supabase = createClient()
 
   useEffect(() => {
@@ -75,8 +77,6 @@ export function useCategories() {
     async function fetchCategories() {
       try {
         setLoading(true)
-        // Get current user to filter categories
-        const { data: { user } } = await supabase.auth.getUser()
         
         let query = supabase
           .from("categories")
@@ -112,7 +112,6 @@ export function useCategories() {
           table: "categories",
         },
         async () => {
-          const { data: { user } } = await supabase.auth.getUser()
           let query = supabase
             .from("categories")
             .select("*")
@@ -133,12 +132,9 @@ export function useCategories() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [supabase])
+  }, [supabase, user])
 
   const createCategory = async (category: Omit<Category, "id" | "createdAt" | "updatedAt">) => {
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser()
-    
     const { data, error } = await supabase
       .from("categories")
       .insert({
@@ -189,7 +185,6 @@ export function useCategories() {
 
     if (error) {
       // Revert optimistic update on error
-      const { data: { user } } = await supabase.auth.getUser()
       let query = supabase
         .from("categories")
         .select("*")
@@ -220,7 +215,6 @@ export function useCategories() {
     const { error } = await supabase.from("categories").delete().eq("id", id)
     if (error) {
       // Revert optimistic update on error by refetching
-      const { data: { user } } = await supabase.auth.getUser()
       let query = supabase
         .from("categories")
         .select("*")
