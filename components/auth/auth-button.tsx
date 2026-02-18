@@ -1,16 +1,34 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { notification } from "@/components/ui/notification"
-import { LogOut } from "lucide-react"
+import { LogOut, LogIn } from "lucide-react"
 import { useRouter } from "next/navigation"
 
-export function LogoutButton() {
+export function AuthButton() {
   const [loading, setLoading] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const supabase = createClient()
   const router = useRouter()
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setIsAuthenticated(!!user)
+    }
+    checkAuth()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session?.user)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase.auth])
 
   const handleLogout = async () => {
     try {
@@ -34,6 +52,25 @@ export function LogoutButton() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleLogin = () => {
+    router.push("/auth/login")
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <Button
+        onClick={handleLogin}
+        disabled={loading}
+        variant="ghost"
+        size="sm"
+        className="gap-2"
+      >
+        <LogIn className="h-4 w-4" />
+        Sign In
+      </Button>
+    )
   }
 
   return (
