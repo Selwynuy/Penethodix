@@ -189,23 +189,23 @@ export default function PentestNotebook() {
   }, [activeEngagement, selectedTarget, createFinding])
 
   const handleCreateEngagement = async () => {
-    try {
-      const newEngagement = await createEngagement({
-        name: "New Engagement",
-        phase: "reconnaissance",
-        status: "active",
-      })
-      setActiveEngagement(newEngagement)
+              try {
+                const newEngagement = await createEngagement({
+                  name: "New Engagement",
+                  phase: "reconnaissance",
+                  status: "active",
+                })
+                setActiveEngagement(newEngagement)
       setShowHomepage(false) // Hide homepage when engagement is created
-      notification.success("Engagement created")
-    } catch (error) {
-      console.error("Failed to create engagement:", error)
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-      notification.error(
-        "Failed to create engagement",
-        errorMessage
-      )
-    }
+                notification.success("Engagement created")
+              } catch (error) {
+                console.error("Failed to create engagement:", error)
+                const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
+                notification.error(
+                  "Failed to create engagement",
+                  errorMessage
+                )
+              }
   }
 
   // Loading state - now after all hooks

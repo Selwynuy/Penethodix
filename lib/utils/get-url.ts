@@ -30,8 +30,17 @@ export function getURL(): string {
 
 /**
  * Get the OAuth callback URL for authentication redirects
+ * Always uses window.location.origin in browser to ensure correct localhost redirects
  */
 export function getAuthCallbackURL(): string {
+  // In browser, always use current origin for OAuth callback
+  if (typeof window !== 'undefined') {
+    const callbackURL = `${window.location.origin}/auth/oauth?next=/`
+    console.log('OAuth callback URL:', callbackURL)
+    return callbackURL
+  }
+  
+  // Server-side fallback
   const baseURL = getURL()
   return `${baseURL}/auth/oauth?next=/`
 }

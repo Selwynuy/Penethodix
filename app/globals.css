@@ -3,45 +3,57 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Light Theme */
+/* Light Theme - Modern Teal/Cyan for Security/Tech feel */
 :root {
-  --background: oklch(0.98 0 0);
-  --foreground: oklch(0.15 0 0);
+  /* Background: Very soft blue-gray (slate-50 tint) */
+  --background: oklch(0.985 0.003 240);
+  --foreground: oklch(0.2 0.01 240);
+  /* Card: Pure white with subtle warmth */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0 0);
+  --card-foreground: oklch(0.2 0.01 240);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0 0);
-  --primary: oklch(0.62 0.19 260);
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.95 0 0);
-  --secondary-foreground: oklch(0.15 0 0);
-  --muted: oklch(0.95 0 0);
-  --muted-foreground: oklch(0.5 0 0);
-  --accent: oklch(0.95 0 0);
-  --accent-foreground: oklch(0.15 0 0);
-  --success: oklch(0.72 0.19 145);
-  --success-foreground: oklch(0.98 0 0);
+  --popover-foreground: oklch(0.2 0.01 240);
+  /* Primary: Teal-600 (security/tech feel - #0d9488) */
+  --primary: oklch(0.59 0.13 180);
+  --primary-foreground: oklch(0.99 0 0);
+  /* Secondary: Soft gray-blue */
+  --secondary: oklch(0.96 0.005 240);
+  --secondary-foreground: oklch(0.25 0.01 240);
+  /* Muted: Light gray-blue */
+  --muted: oklch(0.96 0.005 240);
+  --muted-foreground: oklch(0.5 0.01 240);
+  /* Accent: Cyan-500 for highlights */
+  --accent: oklch(0.75 0.13 195);
+  --accent-foreground: oklch(0.99 0 0);
+  /* Success: Emerald-600 */
+  --success: oklch(0.62 0.17 165);
+  --success-foreground: oklch(0.99 0 0);
+  /* Warning: Amber-500 */
   --warning: oklch(0.78 0.16 70);
-  --warning-foreground: oklch(0.98 0 0);
+  --warning-foreground: oklch(0.15 0 0);
+  /* Destructive: Red-600 */
   --destructive: oklch(0.55 0.22 25);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.9 0 0);
-  --input: oklch(0.95 0 0);
-  --ring: oklch(0.62 0.19 260);
-  --chart-1: oklch(0.62 0.19 260);
-  --chart-2: oklch(0.72 0.19 145);
+  --destructive-foreground: oklch(0.99 0 0);
+  /* Border: Soft gray with blue tint */
+  --border: oklch(0.92 0.005 240);
+  --input: oklch(0.96 0.005 240);
+  /* Ring: Teal-500 */
+  --ring: oklch(0.65 0.13 180);
+  --chart-1: oklch(0.59 0.13 180);
+  --chart-2: oklch(0.62 0.17 165);
   --chart-3: oklch(0.78 0.16 70);
   --chart-4: oklch(0.55 0.22 25);
-  --chart-5: oklch(0.7 0.15 300);
+  --chart-5: oklch(0.65 0.15 280);
   --radius: 0.5rem;
-  --sidebar: oklch(0.97 0 0);
-  --sidebar-foreground: oklch(0.15 0 0);
-  --sidebar-primary: oklch(0.62 0.19 260);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.95 0 0);
-  --sidebar-accent-foreground: oklch(0.15 0 0);
-  --sidebar-border: oklch(0.9 0 0);
-  --sidebar-ring: oklch(0.62 0.19 260);
+  /* Sidebar: Light with blue tint */
+  --sidebar: oklch(0.98 0.003 240);
+  --sidebar-foreground: oklch(0.2 0.01 240);
+  --sidebar-primary: oklch(0.59 0.13 180);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.96 0.005 240);
+  --sidebar-accent-foreground: oklch(0.25 0.01 240);
+  --sidebar-border: oklch(0.92 0.005 240);
+  --sidebar-ring: oklch(0.65 0.13 180);
 }
 
 /* Dark Theme - Slate/Emerald color scheme */
@@ -145,9 +157,17 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+  }
+  /* Remove default focus outlines */
+  *:focus {
+    outline: none;
+  }
+  /* Subtle focus rings only for keyboard navigation */
+  *:focus-visible {
+    @apply outline-1 outline-primary/20 outline-offset-1;
   }
 }
